@@ -14,7 +14,7 @@
 ![Pedlar](misc/pedlarweb_screenshot.jpg)
 
 
-### You can contact us at: [email](algo.trade@imperial.ac.uk) 
+### You can contact us at: <algo.trade@imperial.ac.uk>
 
 <img src="misc/icats_logo.png" alt="icats_logo" width="250"/>
 
