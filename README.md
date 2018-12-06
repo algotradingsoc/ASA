@@ -16,7 +16,8 @@
 
 ---
 
-# Contact us [Email](algo.trade@imperial.ac.uk) 
+## You can contact us at: [email](algo.trade@imperial.ac.uk) 
 
 ![icats](misc/icats_logo.png =333x200)
+<img src="misc/icats_logo.png" alt="icats_logo" width="200"/>
 
