@@ -1,6 +1,6 @@
 # ASA - Algo Soc Agent
 
-### [algo soc](https://www.algosoc.com)
+### [algo soc](http://www.algosoc.com)
 
 ### [algo soc slack](https://algosoc.slack.com)
 
