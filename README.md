@@ -2,13 +2,16 @@
 ---
 ## Algo Soc Agent
 
-[algo soc](www.algosoc.com)
-[algo soc slack](www.algosoc.slack.com)
+[algo soc](http://www.algosoc.com)
+
+[algo soc slack](http://www.algosoc.slack.com)
 
 ---
 
-Pedlar:
-[pedlar server - Accessible on imperial network](icats.doc.ic.ac.uk)
+### Pedlar:
+
+[pedlar server - Accessible on imperial network](http://icats.doc.ic.ac.uk)
+
 ![Pedlar](misc/pedlarweb_screenshot.jpg)
 
 ---
@@ -16,3 +19,4 @@ Pedlar:
 Contact us: 
 [Email](algo.trade@imperial.ac.uk)
 
+![icats](misc/icats_logo.png)
