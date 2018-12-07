@@ -15,7 +15,7 @@
 |8     | Train on a batch of trades (learn to maximise over several trades) |     |
 |9     | Train with different market data                                   |     |
 |10    | Refactor code into simpler classes                                 |     |
-|11    | Fix bug with first few ticks of visualisation                      |     |
+|11    | Fix bug with first few ticks of visualisation missing              |     |
 
 ## How to show the performance of the model
 
