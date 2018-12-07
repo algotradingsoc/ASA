@@ -19,8 +19,8 @@ class DeepQNN:
         self.action_size = 4 ## buy, sell, cancel, do nothing
         self.batch_size = 4
         
-        self.memory = deque(maxlen=self.buffers['memory'])
-        self.order_memory = deque(maxlen=self.buffers['order_memory'])
+        self.memory = deque(maxlen=self.constants['memory'])
+        self.order_memory = deque(maxlen=self.constants['order_memory'])
         self.gamma = 0.9
         if self.train:
             self.order_epsilon = 1.0
