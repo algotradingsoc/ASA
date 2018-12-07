@@ -3,23 +3,16 @@ import socket
 import time
 import csv
 import random
-from collections import deque
-
-from pedlar.agent import Agent
 import numpy as np
-
-import keras
-from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Dropout, LSTM
-from keras.optimizers import Adam
-from keras import backend as K
-
+from collections import deque
+from pedlar.agent import Agent
+from ml import DeepQNN
 
 HOST = '127.0.0.1'
 PORT = 65430
 
 
-class GBPUSD_Agent(Agent):
+class GBPUSD_Agent(Agent, DeepQNN):
     name = "GBPUSD-RL-Agent"
     def __init__(self, **kwargs):
         """ Initialises the agent """
@@ -33,21 +26,22 @@ class GBPUSD_Agent(Agent):
         if self.write:
             open('data/orders.csv', 'w').close()
         
-        self.last_order = -1
-        super().__init__(**kwargs) 
-        
         ## Constants
+        self.constants = {'diff_step': 20,
+                          'mid': 100, 'mid_ma': 2000,
+                          'memory': 1000, 'order_memory': 1000}
         
-        self.diff_step = 20
-        self.hold = 100
-        self.buffers = {'mid':100,
-                        'mid_ma':2000,
-                        'memory':1000,
-                        'order_memory':1000}
+        ## Buffers
+        self.mid_buffer = deque(maxlen=self.constants['mid'])
+        self.mid_ma_buffer = deque(maxlen=self.constants['mid_ma'])
+        self.ma_diff_buffer = self._get_max_ma()
+        
         ## Variables
         """ Values change during training """
+        self.hold = 100
         self.balance = 0
         self.order_num = 0
+        self.last_order = -1
         self.order_dir = None
         self.rnd_order = 0
         self.order_length = 0
@@ -56,87 +50,14 @@ class GBPUSD_Agent(Agent):
         self.spread, self.diff = None, None
         self.last_bid, self.last_ask = None, None
         self.max_drawdown, self.max_upside = None, None
-        
-        ## Buffers
-        self.mid_buffer = deque(maxlen=self.buffers['mid'])
-        self.mid_ma_buffer = deque(maxlen=self.buffers['mid_ma'])
-        self.ma_diff_buffer = self._get_max_ma()
-        
-        ## RL Parameters
-        
-        self.inst_state_size = self.get_state()[0].shape[1]  
-        self.action_size = 4 ## buy, sell, cancel, do nothing
-        self.batch_size = 4
         self.state, self.next_state = None, None
-        self.memory = deque(maxlen=self.buffers['memory'])
-        self.order_memory = deque(maxlen=self.buffers['order_memory'])
-        self.gamma = 0.9
-        if self.train:
-            self.order_epsilon = 1.0
-            self.empty_epsilon = 1.0
-        else:
-            self.order_epsilon = 0.001
-            self.empty_epsilon = 0.001
-        self.order_epsilon_min = 0.001
-        self.empty_epsilon_min = 0.01
-        self.order_epsilon_decay = 0.9
-        self.empty_epsilon_decay = 0.99
-        self.learning_rate = 0.0001
+        self.inst_state_size = self.get_state()[0].shape[1]  
         
-        self.model = self._build_model()  
-        self.model = self.load(f'models/{GBPUSD_Agent.name}_weights.h5', self.model)
-        
-        
-        
-    def on_order(self, order):
-        """On order handler."""
-        self.last_order = order.id
-        self.order_num += 1
-        self.order_length = 0
-
-        self.order_dir = 1 if order.type == "buy" else -1
-        self.max_drawdown, self.max_upside = self.spread * -1, self.spread * -1
-        if self.verbose:
-            print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.rnd_order: }")
-        self.order_memory.append((self.state, self.action, 
-                                  self.reward, self.next_state, self.done))
-
-            
-    def on_order_close(self, order, profit):
-        """On order close handler."""
-        self.reward, self.done = profit, True
-        self.balance += profit
-        text = '{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'.format(self.order_num,
-                                                           profit, 
-                                                           self.balance, 
-                                                           self.order_length,
-                                                           self.rnd_order)
-        self.order_memory.append((self.state, self.action, 
-                                  self.reward, self.next_state, self.done))
-        self.order_length = 0
-        
-        if self.verbose:
-            print(f'{text},{self.order_epsilon: .5f},{self.empty_epsilon: .5f}')
-            
-        if self.write:
-            """ Appends to csv """
-            with open('performance/orders.csv', 'a') as f:
-                f.write(f'{text}\n')
-                
-        if self.visualise:
-            """ Visualises in bokeh """
-            self.send_to_socket(text)
-                
-        if self.train:
-            if len(self.memory) > self.batch_size * 4:
-                self.replay(self.memory, self.batch_size * 4, self.model)
-            if len(self.order_memory) > self.batch_size:
-                self.replay(self.order_memory, self.batch_size, self.model, decay=False)
-                
-        if self.order_num % 10 == 0:
-            """ Saves weights """
-            self.save(f'models/{GBPUSD_Agent.name}_weights.h5', self.model)
-        
+        ## Load parent classes
+        Agent.__init__(self, **kwargs)
+        DeepQNN.__init__(self, self.train,
+                         GBPUSD_Agent.name, 
+                         self.inst_state_size)
         
         
     def on_tick(self, bid, ask):
@@ -156,7 +77,7 @@ class GBPUSD_Agent(Agent):
         self.mid_ma = np.mean(np.array(self.mid_buffer))
         self.mid_ma_buffer.append(self.mid_ma)
         
-        self.set_ma_diff_buffer() ## Updates the value of the moving average difference buffer
+        self.set_ma_diff_buffer() ## Updates the moving average difference buffer
         
         if self.hold > 0: 
             self.hold -= 1
@@ -195,8 +116,74 @@ class GBPUSD_Agent(Agent):
             if self.verbose and self.verbose_ticks:
                 print("{: .5f}\t{: .5f}"
                       .format(self.bid_diff, self.ask_diff))
+        self.rl_loop()
         
-        ## RL Main Loop
+        
+        
+    def on_bar(self, bopen, bhigh, blow, bclose):
+        """On bar handler """
+        if self.verbose_ticks:
+            print("BAR: ", bopen, bhigh, blow, bclose)
+            
+            
+            
+    def on_order(self, order):
+        """On order handler."""
+        self.last_order = order.id
+        self.order_num += 1
+        self.order_length = 0
+
+        self.order_dir = 1 if order.type == "buy" else -1
+        self.max_drawdown, self.max_upside = self.spread * -1, self.spread * -1
+        if self.verbose:
+            print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.rnd_order: }")
+        self.order_memory = self.remember(self.order_memory,
+                                          self.state, self.action, 
+                                          self.reward, self.next_state, 
+                                          self.done)
+
+            
+    def on_order_close(self, order, profit):
+        """On order close handler."""
+        self.reward, self.done = profit, True
+        self.balance += profit
+        text = '{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'.format(self.order_num,
+                                                           profit, 
+                                                           self.balance, 
+                                                           self.order_length,
+                                                           self.rnd_order)
+        self.order_memory = self.remember(self.order_memory,
+                                          self.state, self.action, 
+                                          self.reward, self.next_state, 
+                                          self.done)
+        self.order_length = 0
+        
+        if self.verbose:
+            print(f'{text},{self.order_epsilon: .5f},{self.empty_epsilon: .5f}')
+            
+        if self.write:
+            """ Appends to csv """
+            with open('performance/orders.csv', 'a') as f:
+                f.write(f'{text}\n')
+                
+        if self.visualise:
+            """ Visualises in bokeh """
+            self.send_to_socket(text)
+                
+        if self.train:
+            self.replay(self.memory, self.batch_size * 4, 
+                        self.model)
+            self.replay(self.order_memory, self.batch_size, 
+                        self.model, decay=False)
+            
+                
+        if self.order_num % 10 == 0:
+            """ Saves weights """
+            self.save(f'models/{GBPUSD_Agent.name}_weights.h5', self.model)
+    
+    
+    def rl_loop(self):
+        ## RL Logic
         self.reward, self.done = 0, False 
         self.next_state = self.get_state()
         if self.state is None:
@@ -207,52 +194,7 @@ class GBPUSD_Agent(Agent):
         self.memory.append((self.state, self.action, 
                             self.reward, self.next_state, self.done))
         self.state = self.next_state
-        
-        
-    def on_bar(self, bopen, bhigh, blow, bclose):
-        """On bar handler """
-        if self.verbose_ticks:
-            print("BAR: ", bopen, bhigh, blow, bclose)
             
-
-    def _build_inst_model(self):
-        """ Initialiser for the MLP part of the model """
-        inst_model = Sequential()
-        inst_model.add(Dense(24, input_dim=self.inst_state_size, activation='relu'))
-        inst_model.add(Dropout(0.1))
-        inst_model.add(Dense(48, activation='relu'))
-        inst_model.add(Dropout(0.1))
-        inst_model.add(Dense(24, activation='relu'))
-        inst_model.add(Dropout(0.1))
-        inst_model.add(Dense(self.action_size, activation='linear'))
-        inst_model = self.load(f'models/inst_{GBPUSD_Agent.name}_weights.h5', inst_model) ##Comment out if you don't have a model built
-        return inst_model
-        
-        
-    def _build_model(self):
-        """ Builds the complete neural network """
-        inst = self._build_inst_model()
-        
-        """ RNN model """
-        ma_diff_inputs = Input(shape=(self.ma_diff_buffer.shape[0], 1),
-                               name='ma_diff_input')
-        ma_diff_x = LSTM(32, activation='relu', 
-                         return_sequences=True, name='lstm_after_inputs')(ma_diff_inputs)
-        ma_diff_x = LSTM(8, activation='relu', 
-                         return_sequences=True, name='lstm_mid')(ma_diff_inputs)
-        ma_diff_x = LSTM(3, activation='relu', name='lstm_before_merge')(ma_diff_x)
-        
-        """ Merges RNN wih MLP """
-        merge_x = keras.layers.concatenate([inst.output, ma_diff_x])
-        merge_x = Dense(32, activation='relu')(merge_x)
-        merge_x = Dropout(0.1)(merge_x)
-        merge_output = Dense(self.action_size, activation='linear')(merge_x)
-        
-        model = Model([inst.input, ma_diff_inputs], merge_output)
-        model.compile(loss='mse',
-                      optimizer=Adam(lr=self.learning_rate))
-        return model
-
     
     def get_state(self):
         """ 
@@ -261,11 +203,15 @@ class GBPUSD_Agent(Agent):
          - self.bid_diff       : Change in Bid from last previous
          - self.ask_diff       : Change in Ask from last previous
          - self.spread         : Difference between ask and diff
-         - self.order_dir      : Order type (0 = no order, 1 = buy order, -1 = sell order)
-         - self.max_drawdown   : Difference since the lowest point in current order
-         - self.max_upside     : Difference since the highest point in current order
+         - self.order_dir      : Order type (0 = no order, 1 = buy order, 
+                                             -1 = sell order)
+         - self.max_drawdown   : Difference since the lowest 
+                                 point in current order
+         - self.max_upside     : Difference since the highest point 
+                                 in current order
         RNN:
-         - self.ma_diff_buffer : Array of difference in price at intervals of self.diff_step 
+         - self.ma_diff_buffer : Array of difference in price at 
+                                 intervals of diff_step 
         """
         inst_inputs = [[self.bid_diff], [self.ask_diff], 
                        [self.spread], [self.order_dir], [self.diff],
@@ -281,8 +227,10 @@ class GBPUSD_Agent(Agent):
         Determines the action to take, returns action ID.
          - Depends on the state and the epsilon value
          - Makes random choice with probability of epsilon.
-           - self.order_epsilon : probability when the model is currently in an order
-           - self.empty_epsilon : probability when the model is not in an order
+           - self.order_epsilon : probability when the model 
+                                  is currently in an order
+           - self.empty_epsilon : probability when the model 
+                                  is not in an order
         """
         if self.orders:
             if np.random.rand() <= self.order_epsilon:
@@ -313,7 +261,7 @@ class GBPUSD_Agent(Agent):
          - 1 : buys 
          - 2 : sells 
          - 3 : closes
-         - 4 : nothing
+         - 0 : nothing
         """
         if action == 1:
             self.buy()
@@ -325,55 +273,16 @@ class GBPUSD_Agent(Agent):
         else:
             pass
         return
-    
-    
-    def replay(self, memory, batch_size, model, decay=True):
-        """
-        Trains the model
-         - Iterates through a random sample of the memory of size batch_size
-        """
-        minibatch = random.sample(memory, batch_size)
-        for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                ## If training step is not complete then tries to predict reward
-                target = reward + (self.gamma 
-                                   * np.amax(model.predict([next_state[0],
-                                                            next_state[1]])[0])) 
-            target_f = self.model.predict([state[0], 
-                                           state[1]])
-            target_f[0][action] = target
-            model.fit([state[0],state[1]], 
-                      target_f, epochs=1, verbose=0) ## Training action
-        if decay:
-            ## Decays epsilon values at an exponential rate
-            if self.order_epsilon > self.order_epsilon_min:
-                self.order_epsilon *= self.order_epsilon_decay
-            if self.empty_epsilon > self.empty_epsilon_min:
-                self.empty_epsilon *= self.empty_epsilon_decay
-            
-            
-    def load(self, name, model):
-        """ Loads the weights into the Neural Network """
-        if os.path.isfile(name):
-            print('Model loaded')
-            model.load_weights(name)
-        return model
-        
-            
-    def save(self, name, model):
-        """ Saves a local copy of the model weights """
-        model.save_weights(name)
         
     
     def _get_max_ma(self):
         """ Returns  """
-        return np.zeros(self.buffers['mid_ma'])[::-self.diff_step]
+        return np.zeros(self.constants['mid_ma'])[::-self.constants['diff_step']]
     
     
     def set_ma_diff_buffer(self):
         mids = np.array(self.mid_ma_buffer) ## Converts deque to np.array
-        mids = mids[::-self.diff_step]      ## Gets data point every self.diff_step
+        mids = mids[::-self.constants['diff_step']] ## Gets data point every diff_step
         mids = np.reshape(mids, mids.shape[0]) 
         diff_arr = np.diff(mids)            ## Calculates difference between points
         if diff_arr.shape[0] == 0:          
