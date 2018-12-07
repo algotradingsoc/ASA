@@ -11,11 +11,11 @@ from keras import backend as K
 
 
 class DeepQNN:
-    def __init__(self, train, agent_name, inst_state_size):
+    def __init__(self, train, agent_name, constants):
         self.train = train
         self.agent_name = agent_name
+        self.constants = constants
         
-        self.inst_state_size = inst_state_size
         self.action_size = 4 ## buy, sell, cancel, do nothing
         self.batch_size = 4
         
@@ -76,17 +76,52 @@ class DeepQNN:
             
     
     
+    def get_action(self, state, orders):
+        """ 
+        Determines the action to take, returns action ID.
+         - Depends on the state and the epsilon value
+         - Makes random choice with probability of epsilon.
+           - self.order_epsilon : probability when the model 
+                                  is currently in an order
+           - self.empty_epsilon : probability when the model 
+                                  is not in an order
+        """
+        if orders:
+            if np.random.rand() <= self.order_epsilon:
+                return self.make_random_choice()
+        else:
+            if np.random.rand() <= self.empty_epsilon:
+                return self.make_random_choice()
+        ## If not random choice tries to predict best action
+        act_values = self.model.predict([state[0], 
+                                         state[1]])
+        if self.constants['debug']:
+            print(np.argmax(act_values[0]), "+")
+        return np.argmax(act_values[0]), 0 ## Random choice was not made
+    
+    
+    
+    def make_random_choice(self):
+        rnd_choice = random.randrange(self.action_size)
+        if self.constants['debug']:
+            print(rnd_choice, "-")
+        return rnd_choice, 1  ## Random choice was made
+    
+    
+    
     def _build_inst_model(self):
         """ Initialiser for the MLP part of the model """
         inst_model = Sequential()
-        inst_model.add(Dense(24, input_dim=self.inst_state_size, activation='relu'))
+        inst_model.add(Dense(24, 
+                             input_dim=self.constants['inst_state_size'], 
+                             activation='relu'))
         inst_model.add(Dropout(0.1))
         inst_model.add(Dense(48, activation='relu'))
         inst_model.add(Dropout(0.1))
         inst_model.add(Dense(24, activation='relu'))
         inst_model.add(Dropout(0.1))
         inst_model.add(Dense(self.action_size, activation='linear'))
-        inst_model = self.load(f'models/inst_{self.agent_name}_weights.h5', inst_model) ##Comment out if you don't have a model built
+        inst_model = self.load(f'models/inst_{self.agent_name}_weights.h5', inst_model) 
         return inst_model
         
         
@@ -96,7 +131,7 @@ class DeepQNN:
         inst = self._build_inst_model()
 
         """ RNN model """
-        ma_diff_inputs = Input(shape=(self.ma_diff_buffer.shape[0], 1),
+        ma_diff_inputs = Input(shape=(self.constants['ma_diff_buffer_size'], 1),
                                name='ma_diff_input')
         ma_diff_x = LSTM(32, activation='relu', 
                          return_sequences=True, name='lstm_after_inputs')(ma_diff_inputs)
@@ -120,7 +155,7 @@ class DeepQNN:
     def load(self, name, model):
         """ Loads the weights into the Neural Network """
         if os.path.isfile(name):
-            print('Model loaded')
+            print(f'Loaded {name}')
             model.load_weights(name)
         return model
         
