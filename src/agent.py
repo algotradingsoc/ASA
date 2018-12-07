@@ -26,8 +26,8 @@ class GBPUSD_Agent(Agent):
         self.verbose = True             ## True for printing core results
         self.visualise = True           ## True for visualising with bokeh
         self.verbose_ticks = False      ## True for printing all results
-        self.debug = True               ## True for debugging
-        self.write = True               ## True for exporting results to an output csv
+        self.debug = False              ## True for debugging
+        self.write = False              ## True for exporting results to an output csv
         self.train = True               ## True for training the model - false stops the model from training on inputs it recieves
         
         if self.write:
@@ -301,7 +301,7 @@ class GBPUSD_Agent(Agent):
     
     def make_random_choice(self):
         rnd_choice = random.randrange(self.action_size)
-        if self.debuy:
+        if self.debug:
             print(rnd_choice, "-")
         self.rnd_order = 1  ## Random choice was made
         return rnd_choice

@@ -1,11 +1,5 @@
 # RL Agent Notes and Setup
 
-## How to show the performance of the model
-
-```bash
-$ bokeh serve --show performance
-$ python agent.py
-```
 
 ## To-Do
 
@@ -17,8 +11,16 @@ $ python agent.py
 |4     | Integrate Advantage Model                                          |     |
 |5     | Integrate Critic Model                                             |     |
 |6     | Add multiple training agents                                       |     |
-|7     | Train on exit with random entry (Learn to exit)                    |     |
+|7     | Train on exit with random entry (learn to exit)                    | WIP |
 |8     | Train on a batch of trades (learn to maximise over several trades) |     |
 |9     | Train with different market data                                   |     |
+|10    | Refactor code into simpler classes                                 |     |
 
+## How to show the performance of the model
 
+```bash
+$ bokeh serve --show performance
+$ python agent.py
+```
+
+![Bokeh](../misc/bokeh_performance.PNG)
