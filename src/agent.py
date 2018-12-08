@@ -17,7 +17,7 @@ class GBPUSD_Agent(Agent):
     def __init__(self, **kwargs):
         """ Initialises the agent """
         self.verbose = True             ## True for printing core results
-        self.visualise = False          ## True for visualising with bokeh
+        self.visualise = True           ## True for visualising with bokeh
         self.verbose_ticks = False      ## True for printing all results
         self.debug = False              ## True for debugging
         self.write = False              ## True for exporting results to an output csv
@@ -67,8 +67,14 @@ class GBPUSD_Agent(Agent):
         
     def on_tick(self, bid, ask):
         """On tick handler."""
-        self.update_bid_ask_mid_spread()
-        self.update_bid_ask_diff()
+        self.update_bid_ask_mid_spread(bid, ask)
+        
+        self.order_dir, self.diff = 0, 0 ## Order_dir and order diff reset (If in order then updated)
+        if self.last_bid is None:
+            self.last_bid, self.last_ask = self.bid, self.ask
+            return
+        self.bid_diff, self.ask_diff = self.bid-self.last_bid, self.ask-self.last_ask ## Gets bid and ask change since last tick
+        
         self.update_last_bid_ask()
         
         self.mid_buffer.append(self.mid) 
@@ -91,7 +97,7 @@ class GBPUSD_Agent(Agent):
                     msg = 'NA,NA,NA,{:.3f}'.format(self.order_length)
                     self.send_to_socket(msg)
                         
-            self.get_diff_and_order_dir()
+            self.update_diff_and_order_dir()
             self.update_drawdown_upside()
             
             if self.verbose and self.verbose_ticks:
@@ -151,7 +157,7 @@ class GBPUSD_Agent(Agent):
         self.order_length = 0
         
         if self.verbose:
-            print(f'{text},{self.DQ.order_epsilon: .5f},{self.DQ.empty_epsilon: .5f}')
+            print(f'EXIT: {text},{self.DQ.order_epsilon: .5f},{self.DQ.empty_epsilon: .5f}')
             
         if self.write: ## Appends to csv 
             with open('performance/orders.csv', 'a') as f:
@@ -173,22 +179,10 @@ class GBPUSD_Agent(Agent):
         return
     
     
-    
-    
     def update_bid_ask_mid_spread(self, bid, ask):
-        self.bid, self.ask, self.spread = bid, ask, ask-bid ## Set bid, ask, spread
-        self.mid = (ask - bid)/2
-        return
-    
-    
-    def update_bid_ask_diff(self):
-        """ Gets bid and ask change since last tick """
-        self.order_dir, self.diff = 0, 0 ## Order_dir and order diff reset 
-        if self.last_bid is None: ## Catches first run
-            self.last_bid, self.last_ask = self.bid, self.ask
-            return
-        self.bid_diff = self.bid-self.last_bid, 
-        self.ask_diff = self.ask-self.last_ask 
+        self.bid, self.ask = bid, ask 
+        self.mid = (ask + bid)/2
+        self.spread = ask - bid
         return
         
         

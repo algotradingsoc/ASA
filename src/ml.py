@@ -52,17 +52,15 @@ class DeepQNN:
         """
         if len(memory) < batch_size:
             return model
-        
         minibatch = random.sample(memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
             target = reward
             if not done:
                 ## If training step is not complete then tries to predict reward
+                prediction = model.predict([next_state[0], next_state[1]])
                 target = reward + (self.gamma 
-                                   * np.amax(model.predict([next_state[0],
-                                                            next_state[1]])[0])) 
-            target_f = model.predict([state[0], 
-                                      state[1]])
+                                   * np.amax(prediction[0])) 
+            target_f = model.predict([state[0], state[1]])
             target_f[0][action] = target
             model.fit([state[0],state[1]], 
                       target_f, epochs=1, verbose=0) ## Training action
