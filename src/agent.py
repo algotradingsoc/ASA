@@ -16,22 +16,34 @@ class GBPUSD_Agent(Agent):
     name = "GBPUSD-RL-Agent"
     def __init__(self, **kwargs):
         """ Initialises the agent """
-        self.verbose = True             ## True for printing core results
-        self.visualise = True           ## True for visualising with bokeh
-        self.verbose_ticks = False      ## True for printing all results
-        self.debug = False              ## True for debugging
-        self.write = False              ## True for exporting results to an output csv
-        self.train = True               ## True for training the model - false stops the model from training on inputs it recieves
+        verbose = True             
+        ## True for printing core results
+        visualise = True
+        ## True for visualising with bokeh
+        verbose_ticks = False      
+        ## True for printing ticks
+        debug = False              
+        ## True for debugging (prints network actions at each step)
+        write = False              
+        ## True for exporting results to an output csv
+        train = True               
+        ## True for training the model - false stops the model from training on inputs it recieves
+        load_model = False
+        ## Loads pretrained weights into network
         
         self.constants = {'diff_step': 20,
                           'mid': 100, 'mid_ma': 2000,
                           'memory': 1000, 'order_memory': 1000, 
-                          'verbose':self.verbose, 'visualise':self.visualise,
-                          'verbose_ticks':self.verbose_ticks, 'debug':self.debug,
-                          'write':self.write, 'train':self.train}
+                          'verbose': verbose, 'visualise': visualise,
+                          'verbose_ticks': verbose_ticks, 'debug': debug,
+                          'write': write, 'train': train, 'load_model': load_model}
         
-        if self.write:
+        if self.constants['write']:
             open('data/orders.csv', 'w').close()
+            
+        if self.constants['visualise']:
+            msg = '0.0,0.0,0.0,0.0,0.0'
+            self.send_to_socket(msg)
         
         ## Buffers
         self.mid_buffer = deque(maxlen=self.constants['mid'])
@@ -45,37 +57,38 @@ class GBPUSD_Agent(Agent):
         self.order_num = 0
         self.last_order = -1
         self.order_dir = None
-        self.rnd_order = 0
         self.order_length = 0
         self.mid = None
         self.bid_diff, self.ask_diff = None, None
         self.spread, self.diff = None, None
         self.last_bid, self.last_ask = None, None
         self.max_drawdown, self.max_upside = None, None
-        self.state, self.next_state, self.action = None, None, None
         
-        self.constants['inst_state_size'] = self.get_state()[0].shape[1]  
+        self.constants['inst_state_size'] = len(self.get_inst_inputs())
         self.constants['ma_diff_buffer_size'] = self.ma_diff_buffer.shape[0]
         
         ## Load parent classes
         Agent.__init__(self, **kwargs)
         
-        self.DQ = DeepQNN(self.train,
-                          GBPUSD_Agent.name, 
+        self.DQ = DeepQNN(GBPUSD_Agent.name, 
                           self.constants)
         
         
+        
+        
     def on_tick(self, bid, ask):
-        """On tick handler."""
+        """ 
+        On tick handler
+        Returns: None
+        """
         self.update_bid_ask_mid_spread(bid, ask)
         
         self.order_dir, self.diff = 0, 0 ## Order_dir and order diff reset (If in order then updated)
         if self.last_bid is None:
             self.last_bid, self.last_ask = self.bid, self.ask
             return
-        self.bid_diff, self.ask_diff = self.bid-self.last_bid, self.ask-self.last_ask ## Gets bid and ask change since last tick
-        
-        self.update_last_bid_ask()
+        self.bid_diff, self.ask_diff = self.bid-self.last_bid, self.ask-self.last_ask ## Gets bid,ask change since last tick
+        self.last_bid, self.last_ask = self.bid, self.ask
         
         self.mid_buffer.append(self.mid) 
         mid_ma = np.mean(np.array(self.mid_buffer))
@@ -84,7 +97,7 @@ class GBPUSD_Agent(Agent):
         
         if self.hold > 0: 
             self.hold -= 1
-            if self.verbose or self.verbose_ticks:
+            if self.constants['verbose'] or self.constants['verbose_ticks']:
                 print("Holding:", self.hold)
             return
         
@@ -92,81 +105,82 @@ class GBPUSD_Agent(Agent):
             ## If in order executed
             self.order_length += 1
             
-            if self.visualise:
+            if self.constants['visualise']:
                 if self.order_length % 5 == 0:
-                    msg = 'NA,NA,NA,{:.3f}'.format(self.order_length)
+                    msg = 'NA,NA,NA,{:.3f},0.0'.format(self.order_length)
                     self.send_to_socket(msg)
                         
             self.update_diff_and_order_dir()
             self.update_drawdown_upside()
             
-            if self.verbose and self.verbose_ticks:
-                print("{: .5f} |\t{: .5f}\t{: .5f} |\t{: .5f}\t{: .5f}"
-                      .format(self.diff, 
-                              self.bid_diff, self.ask_diff, 
-                              self.max_drawdown, self.max_upside))
-        else:
-            if self.verbose and self.verbose_ticks:
-                print("{: .5f}\t{: .5f}"
-                      .format(self.bid_diff, self.ask_diff))
-        self.rl_loop()
+        self.print_tick_status()
+        
+        inst = self.get_inst_inputs()
+        lstm = self.ma_diff_buffer
+        self.DQ.memory = self.DQ.main_loop(self.DQ.memory, inst, lstm, self.orders)
+        self.act(self.DQ.variables['action'])
         return
+    
     
     
     
     def on_bar(self, bopen, bhigh, blow, bclose):
-        """On bar handler """
-        if self.verbose_ticks:
+        """ On bar handler """
+        if self.constants['verbose_ticks']:
             print("BAR: ", bopen, bhigh, blow, bclose)
         return
     
-            
+    
+    
             
     def on_order(self, order):
-        """On order handler."""
+        """ On order handler """
         self.last_order = order.id
         self.order_num += 1
         self.order_length = 0
 
         self.order_dir = 1 if order.type == "buy" else -1
         self.max_drawdown, self.max_upside = self.spread * -1, self.spread * -1
-        if self.verbose:
-            print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.rnd_order: }")
+        if self.constants['verbose']:
+            print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.DQ.variables['rnd_choice']: }")
         
-        self.DQ.order_memory = self.DQ.remember(self.DQ.order_memory,
-                                                self.state, self.action, 
-                                                self.reward, self.next_state,
-                                                self.done)
+        inst = self.get_inst_inputs()
+        lstm = self.ma_diff_buffer
+        self.DQ.order_memory = self.DQ.main_loop(self.DQ.order_memory, 
+                                                 inst, lstm, self.orders, 
+                                                 new_action=False)   
         return
 
+                  
+                  
             
     def on_order_close(self, order, profit):
-        """On order close handler."""
-        self.reward, self.done = profit, True
+        """ On order close handler """
         self.balance += profit
         text = '{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'.format(self.order_num,
                                                            profit, 
                                                            self.balance, 
                                                            self.order_length,
-                                                           self.rnd_order)
-        
-        self.DQ.order_memory = self.DQ.remember(self.DQ.order_memory,
-                                                self.state, self.action,
-                                                self.reward, self.next_state, 
-                                                self.done)
+                                                           self.DQ.variables['rnd_choice'])
+        inst = self.get_inst_inputs()
+        lstm = self.ma_diff_buffer
+        self.DQ.order_memory = self.DQ.main_loop(self.DQ.order_memory, 
+                                                 inst, lstm, self.orders,
+                                                 reward=profit, done=True,
+                                                 new_action=False)   
         self.order_length = 0
         
-        if self.verbose:
+        if self.constants['verbose']:
             print(f'EXIT: {text},{self.DQ.order_epsilon: .5f},{self.DQ.empty_epsilon: .5f}')
             
-        if self.write: ## Appends to csv 
+        if self.constants['write']: ## Appends to csv 
             with open('performance/orders.csv', 'a') as f:
                 f.write(f'{text}\n')
                 
-        if self.visualise: ## Visualises in bokeh 
+        if self.constants['visualise']: ## Visualises in bokeh 
             self.send_to_socket(text)
                 
-        if self.train:
+        if self.constants['train']:
             self.DQ.replay(self.DQ.memory, self.DQ.batch_size * 4, 
                            self.DQ.model, decay=False)
             self.DQ.replay(self.DQ.order_memory, self.DQ.batch_size, 
@@ -178,18 +192,15 @@ class GBPUSD_Agent(Agent):
                          self.DQ.model)
         return
     
-    
+              
+                  
+                  
     def update_bid_ask_mid_spread(self, bid, ask):
         self.bid, self.ask = bid, ask 
         self.mid = (ask + bid)/2
         self.spread = ask - bid
         return
         
-        
-    def update_last_bid_ask(self):
-        self.last_bid, self.last_ask = self.bid, self.ask
-        return
-    
     
     def update_ma_diff_buffer(self):
         mids = np.array(self.mid_ma_buffer) ## Converts deque to np.array
@@ -203,7 +214,7 @@ class GBPUSD_Agent(Agent):
         self.ma_diff_buffer[-len(diff_arr):] = diff_arr[:]  
         return
     
-    
+                  
     def update_diff_and_order_dir(self):
         """ 
         Updates current diff and order_dir (order dir) 
@@ -217,7 +228,7 @@ class GBPUSD_Agent(Agent):
             self.order_dir = -1
         return
     
-    
+                  
     def update_drawdown_upside(self):
         if self.diff < self.max_drawdown:
             self.max_drawdown = self.diff
@@ -226,50 +237,12 @@ class GBPUSD_Agent(Agent):
         return
     
     
-    def rl_loop(self):
-        self.reward, self.done = 0, False 
-        self.next_state = self.get_state()
-        if self.state is None:
-            self.state = self.next_state
-            return
-        self.action, self.rnd_order = self.DQ.get_action(self.state,
-                                                         self.orders)
-        self.act(self.action)
-        self.DQ.remember(self.DQ.memory, 
-                         self.state, self.action,
-                         self.reward, self.next_state, 
-                         self.done)
-        self.state = self.next_state
-        return
-            
-    
-    
-    def get_state(self):
-        """ 
-        Returns list of MLP inputs and RNN inputs
-        MLP: 
-         - self.bid_diff       : Change in Bid from last previous
-         - self.ask_diff       : Change in Ask from last previous
-         - self.spread         : Difference between ask and diff
-         - self.order_dir      : Order type (0 = no order, 1 = buy order, 
-                                             -1 = sell order)
-         - self.max_drawdown   : Difference since the lowest 
-                                 point in current order
-         - self.max_upside     : Difference since the highest point 
-                                 in current order
-        RNN:
-         - self.ma_diff_buffer : Array of difference in price at 
-                                 intervals of diff_step 
-        """
+    def get_inst_inputs(self):
         inst_inputs = [[self.bid_diff], [self.ask_diff], 
                        [self.spread], [self.order_dir], [self.diff],
                        [self.max_drawdown], [self.max_upside]]
-        mid_buffer = np.array([list(self.ma_diff_buffer)])
-        inst = np.reshape(inst_inputs, [1, len(inst_inputs)])
-        mid = np.reshape(mid_buffer, (1, mid_buffer.shape[1], 1))
-        return [inst, mid]
-    
-    
+        return inst_inputs
+         
 
     def act(self, action):
         """ 
@@ -291,13 +264,26 @@ class GBPUSD_Agent(Agent):
         return
         
     
-    
     def _get_max_ma(self):
-        """ Returns  """
+        """ Returns full moving average buffer - used in setup """
         return np.zeros(self.constants['mid_ma'])[::-self.constants['diff_step']]
     
     
-        
+    def print_tick_status(self):
+        """ Displays the tick status after every tick """
+        if self.orders:
+            if self.constants['verbose'] and self.constants['verbose_ticks']:
+                print("{: .5f} |\t{: .5f}\t{: .5f} |\t{: .5f}\t{: .5f}"
+                      .format(self.diff, 
+                              self.bid_diff, self.ask_diff, 
+                              self.max_drawdown, self.max_upside))
+        else:
+            if self.constants['verbose'] and self.constants['verbose_ticks']:
+                print("{: .5f}\t{: .5f}"
+                      .format(self.bid_diff, self.ask_diff))
+        return
+                  
+                  
     def send_to_socket(self, msg):
         """ Sends message to bokeh server """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
