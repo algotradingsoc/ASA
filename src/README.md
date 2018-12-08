@@ -16,6 +16,8 @@
 |9     | Train with different market data                                   |     |
 |10    | Refactor code into simpler classes                                 |     |
 |11    | Fix bug with first few ticks of visualisation missing              |     |
+|12    | Move verbose to constants                                          |     |
+|13    | Move state, action to inside DQ                                    |     |
 
 ## How to show the performance of the model
 
