@@ -15,8 +15,6 @@ class DeepQNN:
         self.agent_name = agent_name
         self.constants = constants
         
-        self.constants['action_size'] = 4 ## buy, sell, cancel, do nothing
-        
         self.variables = {'state':None,
                           'next_state': None,
                           'action': None,
@@ -48,7 +46,6 @@ class DeepQNN:
     
     
     
-    
     def main_loop(self, memory, 
                   inst_inputs, lstm_inputs, orders, 
                   reward=0, done=False, new_action=True):
@@ -70,11 +67,9 @@ class DeepQNN:
     
     
     
-    
     def remember(self, memory, state, action, reward, next_state, done, rnd_choice):
         memory.append((state, action, reward, next_state, done, rnd_choice))
         return memory
-    
     
     
     

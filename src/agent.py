@@ -32,6 +32,7 @@ class GBPUSD_Agent(Agent):
         ## Loads pretrained weights into network
         
         self.constants = {'diff_step': 20,
+                          'action_size': 4, ## buy, sell, cancel, do nothing
                           'mid': 100, 'mid_ma': 2000,
                           'memory': 1000, 'order_memory': 1000, 
                           'verbose': verbose, 'visualise': visualise,
@@ -72,7 +73,6 @@ class GBPUSD_Agent(Agent):
         
         self.DQ = DeepQNN(GBPUSD_Agent.name, 
                           self.constants)
-        
         
         
         
@@ -123,13 +123,11 @@ class GBPUSD_Agent(Agent):
     
     
     
-    
     def on_bar(self, bopen, bhigh, blow, bclose):
         """ On bar handler """
         if self.constants['verbose_ticks']:
             print("BAR: ", bopen, bhigh, blow, bclose)
         return
-    
     
     
             
@@ -153,7 +151,6 @@ class GBPUSD_Agent(Agent):
 
                   
                   
-            
     def on_order_close(self, order, profit):
         """ On order close handler """
         self.balance += profit
@@ -192,8 +189,7 @@ class GBPUSD_Agent(Agent):
                          self.DQ.model)
         return
     
-              
-                  
+                   
                   
     def update_bid_ask_mid_spread(self, bid, ask):
         self.bid, self.ask = bid, ask 
