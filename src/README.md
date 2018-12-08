@@ -14,10 +14,10 @@
 |7     | Train on exit with random entry (learn to exit)                    | WIP |
 |8     | Train on a batch of trades (learn to maximise over several trades) |     |
 |9     | Train with different market data                                   |     |
-|10    | Refactor code into simpler classes                                 |     |
+|10    | Refactor code into simpler classes                                 | Yes |
 |11    | Fix bug with first few ticks of visualisation missing              |     |
-|12    | Move verbose to constants                                          |     |
-|13    | Move state, action to inside DQ                                    |     |
+|12    | Move verbose to constants                                          | Yes |
+|13    | Move state, action to inside DQ                                    | Yes |
 
 ## How to show the performance of the model
 
