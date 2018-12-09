@@ -11,8 +11,7 @@ from keras import backend as K
 
 
 class DeepQNN:
-    def __init__(self, agent_name, constants):
-        self.agent_name = agent_name
+    def __init__(self, constants):
         self.constants = constants
         
         self.variables = {'state':None,
@@ -42,7 +41,8 @@ class DeepQNN:
         
         self.model = self._build_model()
         if self.constants['load_model']:
-            self.model = self.load(f'models/{self.agent_name}_weights.h5', self.model)
+            name = self.constants['name']
+            self.model = self.load(f"models/{name}_weights.h5", self.model)
     
     
     
@@ -175,7 +175,8 @@ class DeepQNN:
         inst_model.add(Dense(self.constants['action_size'], 
                              activation='linear'))
         if self.constants['load_model']:
-            inst_model = self.load(f'models/inst_{self.agent_name}_weights.h5', inst_model) 
+            name = self.constants['name']
+            inst_model = self.load(f'models/inst_{name}_weights.h5', inst_model) 
         return inst_model
         
         

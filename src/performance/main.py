@@ -1,5 +1,7 @@
 import numpy as np
 import socket
+from struct import unpack
+
 HOST = '127.0.0.1'
 PORT = 65430
 
@@ -13,25 +15,44 @@ from bokeh.driving import count
 #curdoc().theme = 'dark_minimal'
 
 source = ColumnDataSource(dict(
-    time=[], inst_val=[], cum_val=[], count=[], pnl_color=[], rnd_color=[]
+    time=[], inst_val=[], cum_val=[], 
+    count=[], pnl_color=[], rnd_color=[]
 ))
 
-p = figure(plot_height=500, tools="xpan,xwheel_zoom,xbox_zoom,reset", 
+p = figure(plot_height=500, 
+           tools="xpan,xwheel_zoom,xbox_zoom,reset", 
            y_axis_location="left", title="Cumulative Performance")
 p.x_range.follow = "end"
 p.x_range.follow_interval = 500
 p.x_range.range_padding = 0
-p.line(x='time', y='cum_val', alpha=0.8, line_width=1, color='blue', source=source)
-p.circle(x='time', y='cum_val', color='pnl_color', source=source, size=5)
+p.line(x='time', y='cum_val', 
+       line_width=1, color='grey', 
+       source=source)
+p.circle(x='time', y='cum_val', 
+         color='pnl_color', source=source, size=5)
 
-p2 = figure(plot_height=200, x_range=p.x_range, tools="xpan,xwheel_zoom,xbox_zoom,reset", y_axis_location="left", title="Instantaneous Performance")
-p2.line(x='time', y='inst_val', color='grey', alpha=0.8, line_width=1, source=source)
-p2.circle(x='time', y='inst_val', color='rnd_color', size=5, source=source)
 
-p3 = figure(plot_height=200, x_range=p.x_range, tools="xpan,xwheel_zoom,xbox_zoom,reset", y_axis_location="left", title="Order Length")
-p3.line(x='time', y='count', color='green', source=source)
+p2 = figure(plot_height=200, x_range=p.x_range,
+            tools="xpan,xwheel_zoom,xbox_zoom,reset", 
+            y_axis_location="left", 
+            title="Instantaneous Performance")
+p2.line(x='time', y='inst_val', 
+        line_width=1, color='grey', 
+        source=source)
+p2.circle(x='time', y='inst_val', 
+          color='rnd_color', size=5, 
+          source=source)
+
+
+p3 = figure(plot_height=200, x_range=p.x_range, 
+            tools="xpan,xwheel_zoom,xbox_zoom,reset", 
+            y_axis_location="left", 
+            title="Order Length")
+p3.line(x='time', y='count', 
+        color='green', source=source)
 
 count_msg = PreText(text="",width=500, height=100)
+backtest_msg = PreText(text="",width=500, height=100)
 
 @count()
 def update(t):
@@ -55,8 +76,10 @@ def update(t):
         else:
             rnd_col = 'orange'
 
-        if instaneous <= 0:
+        if instaneous < 0:
             pnl_col = 'red'
+        elif instaneous == 0:
+            pnl_col = 'blue'
         else:
             pnl_col = 'green'
 
@@ -70,6 +93,6 @@ def update(t):
         )
         source.stream(new_data, 300)
 
-curdoc().add_root(column(gridplot([[p], [p2], [p3], [count_msg]], toolbar_location="left", plot_width=1000)))
+curdoc().add_root(column(gridplot([[p], [p2], [p3], [count_msg]], toolbar_location="left", plot_width=1800)))
 curdoc().add_periodic_callback(update, 25)
 curdoc().title = "Performance"

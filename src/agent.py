@@ -4,6 +4,7 @@ import time
 import csv
 import random
 import numpy as np
+from struct import pack
 from collections import deque
 from pedlar.agent import Agent
 from ml import DeepQNN
@@ -14,30 +15,32 @@ PORT = 65430
 
 class GBPUSD_Agent(Agent):
     name = "GBPUSD-RL-Agent"
-    def __init__(self, **kwargs):
+    def __init__(self, file_length=None, **kwargs):
         """ Initialises the agent """
         verbose = True             
-        ## True for printing core results
+        ## True - prints core results
         visualise = True
-        ## True for visualising with bokeh
+        ## True - visualising with bokeh
         verbose_ticks = False      
-        ## True for printing ticks
+        ## True - prints ticks
         debug = False              
-        ## True for debugging (prints network actions at each step)
+        ## True - prints network actions at each step
         write = False              
-        ## True for exporting results to an output csv
+        ## True - exports results to an output csv
         train = True               
-        ## True for training the model - false stops the model from training on inputs it recieves
-        load_model = False
-        ## Loads pretrained weights into network
+        ## True - trains model, false stops model training
+        load_model = True
+        ## True - loads pretrained weights into network
         
-        self.constants = {'diff_step': 20,
+        self.constants = {'name': GBPUSD_Agent.name,
+                          'diff_step': 20,
                           'action_size': 4, ## buy, sell, cancel, do nothing
                           'mid': 100, 'mid_ma': 2000,
                           'memory': 1000, 'order_memory': 1000, 
                           'verbose': verbose, 'visualise': visualise,
                           'verbose_ticks': verbose_ticks, 'debug': debug,
-                          'write': write, 'train': train, 'load_model': load_model}
+                          'write': write, 'train': train, 'load_model': load_model,
+                          'backtest_file_length': file_length}
         
         if self.constants['write']:
             open('data/orders.csv', 'w').close()
@@ -53,6 +56,7 @@ class GBPUSD_Agent(Agent):
         
         ## Variables
         """ Values change during training """
+        self.tick_number = 0
         self.hold = 100
         self.balance = 0
         self.order_num = 0
@@ -71,8 +75,7 @@ class GBPUSD_Agent(Agent):
         ## Load parent classes
         Agent.__init__(self, **kwargs)
         
-        self.DQ = DeepQNN(GBPUSD_Agent.name, 
-                          self.constants)
+        self.DQ = DeepQNN(self.constants)
         
         
         
@@ -81,6 +84,7 @@ class GBPUSD_Agent(Agent):
         On tick handler
         Returns: None
         """
+        self.update_backtest_status()
         self.update_bid_ask_mid_spread(bid, ask)
         
         self.order_dir, self.diff = 0, 0 ## Order_dir and order diff reset (If in order then updated)
@@ -125,6 +129,7 @@ class GBPUSD_Agent(Agent):
     
     def on_bar(self, bopen, bhigh, blow, bclose):
         """ On bar handler """
+        self.update_backtest_status()
         if self.constants['verbose_ticks']:
             print("BAR: ", bopen, bhigh, blow, bclose)
         return
@@ -264,6 +269,12 @@ class GBPUSD_Agent(Agent):
         """ Returns full moving average buffer - used in setup """
         return np.zeros(self.constants['mid_ma'])[::-self.constants['diff_step']]
     
+    def update_backtest_status(self):
+        self.tick_number += 1
+        if self.constants['backtest_file_length'] is not None:
+            if self.tick_number % 100 == 0:
+                print('Backtest status: {:.3f} %'.format(100 * self.tick_number 
+                                                        / self.constants['backtest_file_length']))
     
     def print_tick_status(self):
         """ Displays the tick status after every tick """
@@ -281,7 +292,27 @@ class GBPUSD_Agent(Agent):
                   
                   
     def send_to_socket(self, msg):
-        """ Sends message to bokeh server """
+        """ 
+        Sends message to bokeh server 
+        
+        reward time step - long
+        reward - float
+        
+        order time step - long
+        inst val - float
+        cum val - double
+        max drawdown - float
+        max upside - float
+        
+        order length count - int 
+        wait length count - int
+        
+        rnd order exit - bool (1 = yes, 0 = no)    
+        rnd order entry - bool (1 = yes, 0 = no)
+        
+        backtest percent - float
+        """
+                  
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((HOST, PORT))
             s.sendall(msg.encode())
@@ -293,7 +324,10 @@ class GBPUSD_Agent(Agent):
 if __name__ == "__main__":   
     backtest = True
     if backtest:
-        agent = GBPUSD_Agent(backtest="data/backtest_GBPUSD.csv")
+        filename="data/backtest_GBPUSD.csv"
+        with open(filename) as f:
+            length = sum(1 for line in f)
+        agent = GBPUSD_Agent(file_length=length, backtest=filename)
     else:
         agent = GBPUSD_Agent(username="algosoc", 
                              password="1234",                                        
