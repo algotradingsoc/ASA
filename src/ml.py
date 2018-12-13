@@ -5,7 +5,7 @@ import random
 
 import keras
 from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Dropout, LSTM
+from keras.layers import Input, Dense, Dropout, LSTM, CuDNNLSTM
 from keras.optimizers import Adam
 from keras import backend as K
 
@@ -37,7 +37,7 @@ class DeepQNN:
         self.empty_epsilon_min = 0.01
         self.order_epsilon_decay = 0.9
         self.empty_epsilon_decay = 0.99
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.00001
         
         self.model = self._build_model()
         if self.constants['load_model']:
@@ -77,6 +77,7 @@ class DeepQNN:
         """
         Trains the model
          - Iterates through a random sample of the memory of size batch_size
+        Returns model
         """
         if len(memory) < batch_size:
             return model
@@ -149,7 +150,7 @@ class DeepQNN:
         if self.constants['debug']:
             print(np.argmax(act_values[0]), "+")
         return np.argmax(act_values[0]), 0 ## Random choice was not made
-    
+        
     
     
     def make_random_choice(self):
@@ -188,11 +189,11 @@ class DeepQNN:
         """ RNN model """
         ma_diff_inputs = Input(shape=(self.constants['ma_diff_buffer_size'], 1),
                                name='ma_diff_input')
-        ma_diff_x = LSTM(32, activation='relu', 
-                         return_sequences=True, name='lstm_after_inputs')(ma_diff_inputs)
-        ma_diff_x = LSTM(8, activation='relu', 
-                         return_sequences=True, name='lstm_mid')(ma_diff_inputs)
-        ma_diff_x = LSTM(3, activation='relu', name='lstm_before_merge')(ma_diff_x)
+        ma_diff_x = CuDNNLSTM(32, return_sequences=True,
+                              name='lstm_after_inputs')(ma_diff_inputs)
+        ma_diff_x = CuDNNLSTM(8, return_sequences=True, 
+                              name='lstm_mid')(ma_diff_inputs)
+        ma_diff_x = CuDNNLSTM(3, name='lstm_before_merge')(ma_diff_x)
 
         """ Merges RNN wih MLP """
         merge_x = keras.layers.concatenate([inst.output, ma_diff_x])

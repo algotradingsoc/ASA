@@ -23,7 +23,7 @@ p = figure(plot_height=500,
            tools="xpan,xwheel_zoom,xbox_zoom,reset", 
            y_axis_location="left", title="Cumulative Performance")
 p.x_range.follow = "end"
-p.x_range.follow_interval = 500
+p.x_range.follow_interval = 5000
 p.x_range.range_padding = 0
 p.line(x='time', y='cum_val', 
        line_width=1, color='grey', 

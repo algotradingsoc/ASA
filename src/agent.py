@@ -14,7 +14,7 @@ PORT = 65430
 
 
 class GBPUSD_Agent(Agent):
-    name = "GBPUSD-RL-Agent"
+    name = "Agent-Full-Pass"
     def __init__(self, file_length=None, **kwargs):
         """ Initialises the agent """
         verbose = True             
@@ -27,7 +27,7 @@ class GBPUSD_Agent(Agent):
         ## True - prints network actions at each step
         write = False              
         ## True - exports results to an output csv
-        train = True               
+        train = True      
         ## True - trains model, false stops model training
         load_model = True
         ## True - loads pretrained weights into network
@@ -322,11 +322,12 @@ class GBPUSD_Agent(Agent):
             
         
 if __name__ == "__main__":   
-    backtest = True
+    backtest = False
     if backtest:
         filename="data/backtest_GBPUSD.csv"
-        with open(filename) as f:
-            length = sum(1 for line in f)
+        with open(filename, newline='', encoding='utf-16') as csvfile:
+            reader = csv.reader(csvfile)
+            length = sum(1 for row in reader)
         agent = GBPUSD_Agent(file_length=length, backtest=filename)
     else:
         agent = GBPUSD_Agent(username="algosoc", 
