@@ -322,7 +322,7 @@ class GBPUSD_Agent(Agent):
             
         
 if __name__ == "__main__":   
-    backtest = False
+    backtest = True
     if backtest:
         filename="data/backtest_GBPUSD.csv"
         with open(filename, newline='', encoding='utf-16') as csvfile:
