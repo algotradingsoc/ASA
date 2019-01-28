@@ -4,17 +4,16 @@ import time
 import csv
 import random
 import numpy as np
-from struct import pack
 from collections import deque
+
 from pedlar.agent import Agent
-from ml import DeepQNN
+from rl_ml import DeepQNN
 
 HOST = '127.0.0.1'
 PORT = 65430
 
-
-class GBPUSD_Agent(Agent):
-    name = "Agent-Full-Pass"
+class RLAgent(Agent):
+    name = "RL_Agent"
     def __init__(self, file_length=None, **kwargs):
         """ Initialises the agent """
         verbose = True             
@@ -324,7 +323,7 @@ class GBPUSD_Agent(Agent):
 if __name__ == "__main__":   
     backtest = True
     if backtest:
-        filename="data/backtest_GBPUSD.csv"
+        filename="data/1yr_backtest_GBPUSD.csv"
         with open(filename, newline='', encoding='utf-16') as csvfile:
             reader = csv.reader(csvfile)
             length = sum(1 for row in reader)
