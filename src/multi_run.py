@@ -17,6 +17,7 @@ def parallel_backtest(agents_list, send_to_socket=False):
         try:
             for row_idx,row in enumerate(reader):
                 for agent_idx, agent in enumerate(agents_list):
+                    print(agent_idx)
                     if row[0] == 'tick':
                         # Check if time column exists
                         tim = datetime.strptime(row.pop(), agent.time_format) if len(row) > 3 else None
@@ -88,7 +89,7 @@ def print_results_summary(ran_agents):
         
                    
 if __name__=='__main__':
-    num_of_agents = 12
+    num_of_agents = 50
     backtest = "data/1yr_backtest_GBPUSD.csv"
     choice_on_tick=True
     send_to_socket=True

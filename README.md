@@ -12,15 +12,13 @@
 
 ![Pedlar](misc/pedlarweb_screenshot.jpg)
 
-
-
-## RL Agent Notes and Setup
+## Notes and Setup
 
 #### How to show the performance of the model
 
 ```bash
-$ bokeh serve --show performance
-$ python agent.py
+$ bokeh serve --show visual
+$ python agent_rnd.py
 ```
 
 ### General To-Do
@@ -28,8 +26,10 @@ $ python agent.py
 |Item #| Description                                                        | Done|
 |:---: | :---------------------------------------------------------------   |:---:|
 |1     | Improve documentation and comments for functions                   |     |
-|2     | Make bokeh visualisation scalable                                  |     |
+|2     | Make bokeh visualisation scalable                                  | Yes |
 |3     | Bokeh button for starting and ending backtest                      |     |
+|4     | Bokeh improve the efficiency of the data vis, move to new thread   |     |
+|5     | Bokeh add histogram/hexbin for showing distribution of resutls     |     |
 
 
 ### RL To-Do

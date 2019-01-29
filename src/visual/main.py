@@ -8,6 +8,7 @@ from bokeh.events import ButtonClick
 from bokeh.plotting import curdoc, figure
 from bokeh.driving import count
 
+import time
 
 class Visual():
     def __init__(self):
@@ -15,15 +16,31 @@ class Visual():
         self.PORT = 65430
         self.PACKING = '?ifi'
         self.agents = None
-        self.data = []
+        self.current_data = None
+        self.previous_time = 1
 
-source = ColumnDataSource(dict(
-    time=[], 
-    l1=[], l2=[], l3=[],
-    l4=[], l5=[], l6=[],
-    l7=[], l8=[], l9=[],
-    l10=[], l11=[], l12=[]
-))
+visual = Visual()
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((visual.HOST, visual.PORT))
+s.listen()
+conn, addr = s.accept()
+with conn:
+    data = conn.recv(1024)
+    data = unpack(visual.PACKING, data)
+    print("Data 1:",data)
+    if data[0]:
+        visual.agents = data[1]
+        visual.current_data = [0] * visual.agents
+s.close()
+
+
+source_data = dict(time=[])
+print("Vis A:",visual.agents)
+for i in range(visual.agents):
+    source_data[f'l{i}'] = []
+
+source = ColumnDataSource(data=source_data)
 
 p = figure(plot_height=500, 
            tools="xpan,xwheel_zoom,xbox_zoom,reset", 
@@ -33,58 +50,13 @@ p.x_range.follow = "end"
 p.x_range.follow_interval = 5000
 p.x_range.range_padding = 0
 
-p.line(x='time', y='l1', 
-       line_width=1, color='green', 
-       source=source)
-p.line(x='time', y='l2', 
-       line_width=1, color='blue', 
-       source=source)
-p.line(x='time', y='l3', 
-       line_width=1, color='orange', 
-       source=source)
-p.line(x='time', y='l4', 
-       line_width=1, color='green', 
-       source=source)
-p.line(x='time', y='l5', 
-       line_width=1, color='blue', 
-       source=source)
-p.line(x='time', y='l6', 
-       line_width=1, color='orange', 
-       source=source)
-p.line(x='time', y='l7', 
-       line_width=1, color='green', 
-       source=source)
-p.line(x='time', y='l8', 
-       line_width=1, color='blue', 
-       source=source)
-p.line(x='time', y='l9', 
-       line_width=1, color='orange', 
-       source=source)
-p.line(x='time', y='l10', 
-       line_width=1, color='green', 
-       source=source)
-p.line(x='time', y='l11', 
-       line_width=1, color='blue', 
-       source=source)
-p.line(x='time', y='l12', 
-       line_width=1, color='orange', 
-       source=source)
-
-
-b = Button()
-
-def callback(event):
-    print('Python:Click')
-    curdoc().remove_periodic_callback()
-    print("Done")
-
-b.on_event(ButtonClick, callback)
-
-visual = Visual()
+for i in range(visual.agents):
+    p.line(x='time', y=f'l{i}', source=source)
 
 
 @count()
 def update(t):
+    global source
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((visual.HOST, visual.PORT))
     s.listen()
@@ -92,37 +64,142 @@ def update(t):
     with conn:
         data = conn.recv(1024)
         data = unpack(visual.PACKING, data)
+        print("Data 2:",data)
         if data[0]:
-            visual.agents = data[1]
-            visual.data = [0] * visual.agents
+            print("Warning")
+            pass
         else:
             target_agent = data[1]
             agent_value = data[2]
             agent_time = data[3]
-            visual.data[target_agent] = agent_value
-            if target_agent == visual.agents - 1:
-
+#             print(agent_time, target_agent, agent_value)
+            if visual.previous_time != agent_time:
+                ## send data, previous time step completed
+#                 print("Caught")
                 new_data = dict(
-                    time=[agent_time],
-                    l1=[visual.data[0]], 
-                    l2=[visual.data[1]], 
-                    l3=[visual.data[2]],
-                    l4=[visual.data[3]], 
-                    l5=[visual.data[4]], 
-                    l6=[visual.data[5]],
-                    l7=[visual.data[6]], 
-                    l8=[visual.data[7]], 
-                    l9=[visual.data[8]],
-                    l10=[visual.data[9]], 
-                    l11=[visual.data[10]], 
-                    l12=[visual.data[11]]
+                    time = [visual.previous_time]
                 )
+                for idx,i in enumerate(visual.current_data):
+                    new_data[f'l{idx}'] = [i]
+#                 print(new_data)
                 source.stream(new_data, 300)
+                visual.previous_time = agent_time
+#                 print(visual.previous_time, agent_time)
+            visual.current_data[target_agent] = agent_value
+
         s.close()
+#     print("----")
+
+curdoc().add_root(column(gridplot([[p]], toolbar_location="left")))
+curdoc().add_periodic_callback(update, 10)
+curdoc().title = "Multi Visual"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# import numpy as np
+# import socket
+# from struct import unpack
+
+# from bokeh.layouts import column, gridplot
+# from bokeh.models import ColumnDataSource, Button
+# from bokeh.events import ButtonClick
+# from bokeh.plotting import curdoc, figure
+# from bokeh.driving import count
+
+
+# class Visual():
+#     def __init__(self):
+#         self.HOST = '127.0.0.1'
+#         self.PORT = 65430
+#         self.PACKING = '?ifi'
+#         self.agents = None
+#         self.current_data = None
+
+# source = ColumnDataSource(dict(
+#                                xs=[], 
+#                                ys=[]
+#                               ))
+        
+        
+
+# def callback(event):
+#     print('Python:Click')
+#     curdoc().remove_periodic_callback()
+#     print("Done")
+
+
+# visual = Visual()
+
+# p = figure(plot_height=500, 
+#            tools="xpan,xwheel_zoom,xbox_zoom,reset", 
+#            y_axis_location="left", title="Multi Performance")
+
+# p.x_range.follow = "end"
+# p.x_range.follow_interval = 5000
+# p.x_range.range_padding = 0
+
+# p.multi_line(xs='xs', ys='ys', source=source)
+
+# b = Button()
+# b.on_event(ButtonClick, callback)
+
+
+# @count()
+# def update(t):
+#     global source
+#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     s.bind((visual.HOST, visual.PORT))
+#     s.listen()
+#     conn, addr = s.accept()
+#     with conn:
+#         data = conn.recv(1024)
+#         data = unpack(visual.PACKING, data)
+#         if data[0]:
+#             visual.agents = data[1]
+#             visual.current_data = [0] * visual.agents
+#             source.data = dict(
+#                 xs=[[] for i in range(visual.agents)], 
+#                 ys=[[] for i in range(visual.agents)]
+#             )
+#         else:
+#             target_agent = data[1]
+#             agent_value = data[2]
+#             agent_time = data[3]
+#             visual.current_data[target_agent] = agent_value
+#             if target_agent == visual.agents - 1:
+#                 new_data = dict()
+                
+#                 new_data['xs'] = [agent_time] * visual.agents
+#                 new_data['ys'] = visual.current_data
+#                 print(new_data)
+#                 source.stream(new_data, 300)
+#                 print(source.data)
+#                 print("====")
+#         s.close()
                 
 
-curdoc().add_root(column(gridplot([[p],[b]], toolbar_location="left")))
-curdoc().add_periodic_callback(update, 1000)
-curdoc().title = "Multi Visual"
+# curdoc().add_root(column(gridplot([[p],[b]], toolbar_location="left")))
+# curdoc().add_periodic_callback(update, 1000)
+# curdoc().title = "Multi Visual"
 
 
