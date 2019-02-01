@@ -14,24 +14,19 @@ PORT = 65430
 
 class RLAgent(Agent):
     name = "RL_Agent"
-    def __init__(self, file_length=None, **kwargs):
+    def __init__(self,
+                 file_length=None,
+                 verbose=False,   ## prints key info
+                 visualise=False, ## visualising with bokeh
+                 verbose_ticks=False, ## prints ticks
+                 debug=False,     ## prints network actions at each step
+                 write=False,     ## exports results to an output csv
+                 train=True,      ## trains model, false uses current weights
+                 load_model=False,## loads pretrained model
+                 **kwargs):
         """ Initialises the agent """
-        verbose = True             
-        ## True - prints core results
-        visualise = True
-        ## True - visualising with bokeh
-        verbose_ticks = False      
-        ## True - prints ticks
-        debug = False              
-        ## True - prints network actions at each step
-        write = False              
-        ## True - exports results to an output csv
-        train = True      
-        ## True - trains model, false stops model training
-        load_model = True
-        ## True - loads pretrained weights into network
         
-        self.constants = {'name': GBPUSD_Agent.name,
+        self.constants = {'name': RLAgent.name,
                           'diff_step': 20,
                           'action_size': 4, ## buy, sell, cancel, do nothing
                           'mid': 100, 'mid_ma': 2000,
@@ -327,10 +322,10 @@ if __name__ == "__main__":
         with open(filename, newline='', encoding='utf-16') as csvfile:
             reader = csv.reader(csvfile)
             length = sum(1 for row in reader)
-        agent = GBPUSD_Agent(file_length=length, backtest=filename)
+        agent = RLAgent(file_length=length, backtest=filename)
     else:
-        agent = GBPUSD_Agent(username="algosoc", 
-                             password="1234",                                        
-                             ticker="tcp://icats.doc.ic.ac.uk:7000",
-                             endpoint="http://icats.doc.ic.ac.uk")
+        agent = RLAgent(username="algosoc",
+                        password="1234",
+                        ticker="tcp://icats.doc.ic.ac.uk:7000",
+                        endpoint="http://icats.doc.ic.ac.uk")
     agent.run()

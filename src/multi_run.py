@@ -16,8 +16,9 @@ def parallel_backtest(agents_list, send_to_socket=False):
         reader = csv.reader(csvfile)
         try:
             for row_idx,row in enumerate(reader):
+                if row_idx % 1000 == 0:
+                    print(row_idx)
                 for agent_idx, agent in enumerate(agents_list):
-                    print(agent_idx)
                     if row[0] == 'tick':
                         # Check if time column exists
                         tim = datetime.strptime(row.pop(), agent.time_format) if len(row) > 3 else None
@@ -79,17 +80,20 @@ def print_results_summary(ran_agents):
     :return: list of results from the agents
     """
     results = []
+    total_return = 0
     for agent in ran_agents:
         results = agent.risk.post_analysis()
-        print(results['total'])
-        print(results['trades'])
-        print(results['RoMDD'])
+        total_return += results['total']
+        print("total:", results['total'])
+        print("# of trades:",results['trades'])
+        print("return/max drawdown:", results['RoMDD'])
         print('============')
+    print("mean return:", total_return/len(ran_agents))
     return results
         
                    
 if __name__=='__main__':
-    num_of_agents = 50
+    num_of_agents = 3
     backtest = "data/1yr_backtest_GBPUSD.csv"
     choice_on_tick=True
     send_to_socket=True

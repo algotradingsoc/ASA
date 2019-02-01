@@ -32,6 +32,7 @@ $ python agent_rnd.py
 |5     | Bokeh add histogram/hexbin for showing distribution of resutls     |     |
 
 
+
 ### RL To-Do
 
 |Item #| Description                                                        | Done|
