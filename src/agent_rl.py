@@ -184,7 +184,7 @@ class RLAgent(Agent):
                             
         if self.order_num % 4 == 0:
             """ Saves weights """
-            self.DQ.save(f'models/{GBPUSD_Agent.name}_weights.h5',
+            self.DQ.save(f'models/{RLAgent.name}_weights.h5',
                          self.DQ.model)
         return
     
