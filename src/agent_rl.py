@@ -9,6 +9,8 @@ from collections import deque
 from pedlar.agent import Agent
 from rl_ml import DeepQNN
 
+
+
 HOST = '127.0.0.1'
 PORT = 65430
 
@@ -319,9 +321,8 @@ if __name__ == "__main__":
     backtest = True
     if backtest:
         filename="data/1yr_backtest_GBPUSD.csv"
-        with open(filename, newline='', encoding='utf-16') as csvfile:
-            reader = csv.reader(csvfile)
-            length = sum(1 for row in reader)
+        from backtest_funcs import get_file_length
+        length = get_file_length(filename)
         agent = RLAgent(file_length=length, backtest=filename)
     else:
         agent = RLAgent(username="algosoc",

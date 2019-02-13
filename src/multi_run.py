@@ -2,6 +2,8 @@ import socket_messaging
 import time
 import csv
 
+
+
         
 def parallel_backtest(agents_list, send_to_socket=False):
     """Runs multiple against local backtesting file in parallel.
@@ -93,10 +95,13 @@ def print_results_summary(ran_agents):
         
                    
 if __name__=='__main__':
-    num_of_agents = 3
+    num_of_agents = 30
     backtest = "data/1yr_backtest_GBPUSD.csv"
+    from backtest_funcs import get_file_length
+    length = get_file_length(filename)
+    print(length)
     choice_on_tick=True
-    send_to_socket=True
+    send_to_socket=False
     from agent_rnd import RandomAgent
     agents_list = gen_same_agent_list(num_of_agents, RandomAgent, choice_on_tick=choice_on_tick, backtest=backtest)
     ran_agents = parallel_backtest(agents_list, send_to_socket=send_to_socket)
