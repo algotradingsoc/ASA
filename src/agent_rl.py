@@ -85,8 +85,9 @@ class RLAgent(Agent):
 #                 print("Holding:", self.hold)
 #             return
 
-        order = self.orders[self._last_order_id]
+        
         if self.orders: 
+            order = self.orders[self._last_order_id]
             self.agent_core.update_order(order)
             self.risk.update_current(self.agent_core.diff)
             
@@ -95,7 +96,7 @@ class RLAgent(Agent):
 #                     msg = 'NA,NA,NA,{:.3f},0.0'.format(self.agent_core.order_length)
 #                     self.send_to_socket(msg)
                     
-        self.agent_core.print_status(orders)
+        self.agent_core.print_status(self.orders)
         
         inst = self.get_inst_inputs()
         lstm = self.ma_diff_buffer
