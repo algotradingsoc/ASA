@@ -60,3 +60,23 @@ class AgentCore():
         else:
             diff = order.price - self.ask
         return diff
+    
+
+    def print_status(self, orders):
+        if orders:
+            print("""
+                Length: {: .5f} | Mid:  {: .5f}
+                Spread: {: .5f} | Diff: {: .5f}
+                Change: {: .5f}
+                """.format(self.order_length, 
+                           self.mid,
+                           self.spread, 
+                           self.diff,
+                           self.change['ask']))
+        else:
+            print(
+                f"""
+                Mid: {self.mid: .5f} | Spread: {self.spread: .5f}
+                """)
+        
+        

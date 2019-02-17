@@ -22,7 +22,6 @@ class RLAgent(Agent):
                  visualise=False, ## visualising with bokeh
                  verbose_ticks=False, ## prints ticks
                  debug=False,     ## prints network actions at each step
-                 write=False,     ## exports results to an output csv
                  train=True,      ## trains model, false uses current weights
                  load_model=False,## loads pretrained model
                  **kwargs):
@@ -39,8 +38,7 @@ class RLAgent(Agent):
                           'write': write, 'train': train, 'load_model': load_model,
                           'backtest_file_length': file_length}
         
-#         if self.constants['write']: ### sort out csv writing
-#             open('data/orders.csv', 'w').close()
+
             
 #         if self.constants['visualise']:  ### sourt out writing to socket
 #             msg = '0.0,0.0,0.0,0.0,0.0'
@@ -72,24 +70,23 @@ class RLAgent(Agent):
         On tick handler
         Returns: None
         """
-        print(bid, ask, self.tick_number)
+        
         self.tick_number += 1
         self.agent_core.update_bid_ask_mid_spread(bid, ask, modify_change=True)
                 
         self.mid_buffer.append(self.agent_core.mid) 
         mid_ma = np.mean(np.array(self.mid_buffer))
         self.mid_ma_buffer.append(mid_ma)
-        self.update_ma_diff_buffer() ## Updates the moving average difference buffer
+        self.update_ma_diff_buffer() 
         
 #         if self.hold > 0: 
 #             self.hold -= 1
 #             if self.constants['verbose'] or self.constants['verbose_ticks']:
 #                 print("Holding:", self.hold)
 #             return
-        
+
+        order = self.orders[self._last_order_id]
         if self.orders: 
-            ## If in order executed
-            order = self.orders[self._last_order_id]
             self.agent_core.update_order(order)
             self.risk.update_current(self.agent_core.diff)
             
@@ -98,7 +95,7 @@ class RLAgent(Agent):
 #                     msg = 'NA,NA,NA,{:.3f},0.0'.format(self.agent_core.order_length)
 #                     self.send_to_socket(msg)
                     
-#         self.print_tick_status()
+        self.agent_core.print_status(orders)
         
         inst = self.get_inst_inputs()
         lstm = self.ma_diff_buffer
@@ -134,11 +131,11 @@ class RLAgent(Agent):
                   
     def on_order_close(self, order, profit):
         """ On order close handler """
-#         text = '{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'.format(self._last_order_id,
-#                                                            profit, 
-#                                                            self.balance, 
-#                                                            self.agent_core.order_length,
-#                                                            self.DQ.variables['rnd_choice'])
+        text = '{:.3f},{:.3f},{:.3f},{:.3f},{:.3f}'.format(self._last_order_id,
+                                                           profit, 
+                                                           self.balance, 
+                                                           self.agent_core.order_length,
+                                                           self.DQ.variables['rnd_choice'])
         inst = self.get_inst_inputs()
         lstm = self.ma_diff_buffer
         self.DQ.order_memory = self.DQ.main_loop(self.DQ.order_memory, 
@@ -147,13 +144,10 @@ class RLAgent(Agent):
                                                  new_action=False)   
         
         
-#         if self.constants['verbose']:
-#             print(f'EXIT: {text},{self.DQ.order_epsilon: .5f},{self.DQ.empty_epsilon: .5f}')
+        if self.constants['verbose']:
+            print(f'EXIT: {text},{self.DQ.order_epsilon: .5f},{self.DQ.empty_epsilon: .5f}')
             
-#         if self.constants['write']: ## Appends to csv 
-#             with open('performance/orders.csv', 'a') as f:
-#                 f.write(f'{text}\n')
-                
+           
 #         if self.constants['visualise']: ## Visualises in bokeh 
 #             self.send_to_socket(text)
                 
@@ -223,28 +217,10 @@ class RLAgent(Agent):
         """ Returns full moving average buffer - used in setup """
         return np.zeros(self.constants['mid_ma'])[::-self.constants['diff_step']]
     
-#     def update_backtest_status(self):
-#         self.tick_number += 1
-#         if self.constants['backtest_file_length'] is not None:
-#             if self.tick_number % 100 == 0:
-#                 print('Backtest status: {:.3f} %'.format(100 * self.tick_number 
-#                                                         / self.constants['backtest_file_length']))
+
     
-#     def print_tick_status(self):
-#         """ Displays the tick status after every tick """
-#         if self.orders:
-#             if self.constants['verbose'] and self.constants['verbose_ticks']:
-#                 print("{: .5f} |\t{: .5f}\t{: .5f} |\t{: .5f}\t{: .5f}"
-#                       .format(self.diff, 
-#                               self.bid_diff, self.ask_diff, 
-#                               self.risk.current_trade['max_drawdown'], 
-#                               self.risk.current_trade['max_upside']))
-#         else:
-#             if self.constants['verbose'] and self.constants['verbose_ticks']:
-#                 print("{: .5f}\t{: .5f}"
-#                       .format(self.bid_diff, self.ask_diff))
-#         return
-                  
+
+ 
                   
 #     def send_to_socket(self, msg):
 #         """ 

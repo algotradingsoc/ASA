@@ -17,13 +17,12 @@ class RandomAgent(Agent):
         self.sell_prob = buy_sell / 2
         
         self.tick_number, self.bar_number = 0, 0
+        self.risk = RiskMetrics() 
+        self.agent_core = AgentCore()
         
         super().__init__(**kwargs) 
         
-        self.risk = RiskMetrics() 
-        self.agent_core = AgentCore()
-    
-    
+        
     def on_tick(self, bid, ask, time=None):
         """On tick handler."""
         self.tick_number += 1
