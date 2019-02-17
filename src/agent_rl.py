@@ -71,6 +71,7 @@ class RLAgent(Agent):
         On tick handler
         Returns: None
         """
+        print(bid, ask, tick_number)
         self.tick_number += 1
         self.agent_core.update_bid_ask_mid_spread(bid, ask, modify_change=True)
                 
@@ -187,8 +188,11 @@ class RLAgent(Agent):
                 
     
     def get_inst_inputs(self):
-        inst_inputs = [[self.bid_diff], [self.ask_diff], 
-                       [self.spread], [self.order_dir], [self.diff],
+        inst_inputs = [[self.agent_core.change['bid']], 
+                       [self.agent_core.change['ask']], 
+                       [self.agent_core.change['spread']], 
+                       [self.agent_core.order_dir], 
+                       [self.agent_core.diff],
                        [self.current_trade['max_drawdown']], 
                        [self.current_trade['max_upside']]]  
         return inst_inputs
