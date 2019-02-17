@@ -2,9 +2,8 @@ import socket_messaging
 import time
 import csv
 
+PACKING = '?ifi' ## format data is sent over the socket to bokeh
 
-
-        
 def parallel_backtest(agents_list, send_to_socket=False):
     """Runs multiple against local backtesting file in parallel.
     :param agents_list: list of initalised agents
@@ -13,7 +12,7 @@ def parallel_backtest(agents_list, send_to_socket=False):
     """
     backtest = same_backtest(agents_list)
     if send_to_socket:
-        socket_messaging.init_bokeh(len(agents_list))
+        socket_messaging.send_data(PACKING, True, len(agents_list), 0, 0)
     with open(backtest, newline='', encoding='utf-16') as csvfile:
         reader = csv.reader(csvfile)
         try:
@@ -31,8 +30,13 @@ def parallel_backtest(agents_list, send_to_socket=False):
                         tim = datetime.strptime(row.pop(), agent.time_format) if len(row) > 5 else None
                         agent.on_bar(*[float(x) for x in row[1:]], time=tim)
                         if send_to_socket:
-                            socket_messaging.send_agent_data(agent_idx, agent.balance, agent.bar_number)
+                            socket_messages.send_data(PACKING, 
+                                                      False, agent_idx, 
+                                                      agent.balance, 
+                                                      agent.bar_number)
         except KeyboardInterrupt:
+            
+            ## could add in a way for the socket to send a close message, maybe true, -1, 0, 0?
             pass
     return agents_list
 
@@ -89,21 +93,24 @@ def print_results_summary(ran_agents):
         print("total:", results['total'])
         print("# of trades:",results['trades'])
         print("return/max drawdown:", results['RoMDD'])
-        print('============')
+        print("============")
     print("mean return:", total_return/len(ran_agents))
     return results
         
                    
 if __name__=='__main__':
     num_of_agents = 30
+    
     backtest = "data/1yr_backtest_GBPUSD.csv"
+    
     from backtest_funcs import get_file_length
     length = get_file_length(filename)
-    print(length)
-    choice_on_tick=True
-    send_to_socket=False
+    print(f"Backtest file length: {length}")
+    
     from agent_rnd import RandomAgent
-    agents_list = gen_same_agent_list(num_of_agents, RandomAgent, choice_on_tick=choice_on_tick, backtest=backtest)
-    ran_agents = parallel_backtest(agents_list, send_to_socket=send_to_socket)
+    agents_list = gen_same_agent_list(num_of_agents, RandomAgent, 
+                                      choice_on_tick=True, 
+                                      backtest=backtest)
+    ran_agents = parallel_backtest(agents_list, send_to_socket=False)
     results = print_results_summary(ran_agents)
     

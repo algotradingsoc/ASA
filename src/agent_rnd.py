@@ -3,8 +3,6 @@ from risk import RiskMetrics
 from core import AgentCore
 
 import random
-import csv
-
 
 class RandomAgent(Agent):
     def __init__(self, nothing_prob=0.7, choice_on_tick=False, verbose=False, **kwargs):
@@ -29,11 +27,11 @@ class RandomAgent(Agent):
     def on_tick(self, bid, ask, time=None):
         """On tick handler."""
         self.tick_number += 1
-        
         self.agent_core.update_bid_ask_mid_spread(bid, ask)
+        
         if self.orders:
             order = self.orders[self._last_order_id]
-            self.agent_core.update_diff(order)
+            self.agent_core.update_order(order)
             self.risk.update_current(self.agent_core.diff)
         if self.verbose:
             print("Tick:", bid, ask)

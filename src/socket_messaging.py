@@ -4,7 +4,6 @@ from struct import pack
 
 HOST = '127.0.0.1'
 PORT = 65430
-PACKING = '?ifi'
 
 
 def send_to_socket(msg):
@@ -18,18 +17,13 @@ def send_to_socket(msg):
         except ConnectionRefusedError:
             continue
         break
-
         
-def init_bokeh(agents):
-    msg = pack(PACKING, True, agents, 0, 0)
-    send_to_socket(msg)
     
-    
-def send_agent_data(agent_id, value, time):
-    msg = pack(PACKING, False, agent_id, value, time)
+def send_data(PACKING, *args): 
+    msg = pack(PACKING, *args)
     send_to_socket(msg)
     
     
 if __name__=='__main__':
-    init_bokeh(3)
+    send_data('?ifi', True, 3, 0, 0)
     
