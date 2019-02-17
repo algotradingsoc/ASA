@@ -2,6 +2,7 @@ from pedlar.agent import Agent
 from risk import RiskMetrics
 from core import AgentCore
 from rl_ml import DeepQNN
+from backtest_funcs import print_backtest_status
 
 
 import socket
@@ -79,12 +80,8 @@ class RLAgent(Agent):
         self.mid_ma_buffer.append(mid_ma)
         self.update_ma_diff_buffer() 
         
-#         if self.hold > 0: 
-#             self.hold -= 1
-#             if self.constants['verbose'] or self.constants['verbose_ticks']:
-#                 print("Holding:", self.hold)
-#             return
-
+        if self.agent_core.check_hold(self.tick_number):
+            return 
         
         if self.orders: 
             order = self.orders[self._last_order_id]
@@ -95,8 +92,14 @@ class RLAgent(Agent):
 #                 if self.agent_core.order_length % 5 == 0:
 #                     msg = 'NA,NA,NA,{:.3f},0.0'.format(self.agent_core.order_length)
 #                     self.send_to_socket(msg)
-                    
-        self.agent_core.print_status(self.orders)
+
+        if self.constants['verbose']:
+            print_backtest_status(self.tick_number,
+                                  self.constants['backtest_file_length'], 
+                                  freq=100)
+            if self.constants['verbose_ticks']:
+                self.agent_core.print_status(self.orders)
+                
         
         inst = self.get_inst_inputs()
         lstm = self.ma_diff_buffer
@@ -109,9 +112,8 @@ class RLAgent(Agent):
     def on_bar(self, bopen, bhigh, blow, bclose):
         """ On bar handler """
         self.bar_number += 1
-#         self.update_backtest_status()
-#         if self.constants['verbose_ticks']:
-#             print("BAR: ", bopen, bhigh, blow, bclose)
+        if self.constants['verbose_ticks']:
+            print("BAR: ", bopen, bhigh, blow, bclose)
         return
     
     
@@ -182,7 +184,6 @@ class RLAgent(Agent):
         return
     
                 
-    
     def get_inst_inputs(self):
         inst_inputs = [[self.agent_core.change['bid']], 
                        [self.agent_core.change['ask']], 

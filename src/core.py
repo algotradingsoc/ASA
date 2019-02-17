@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 class AgentCore():
-    def __init__(self, mv_average=None):
+    def __init__(self, hold=10, mv_average=None):
         self.bid = None
         self.ask = None
         self.mid = None
@@ -12,11 +12,17 @@ class AgentCore():
         self.diff = None
         self.order_dir = None
         
-        self.hold = None ## need a set and an update
+        self.hold = hold
         
         if mv_average != None:
             pass
     
+    
+    def check_hold(self, tick):
+        if tick < self.hold:
+            return True ## In hold period
+        else:
+            return False
     
     def update_bid_ask_mid_spread(self, bid, ask, modify_change=False):
         mid = (ask + bid)/2
