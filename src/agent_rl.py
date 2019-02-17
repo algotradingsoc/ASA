@@ -72,7 +72,7 @@ class RLAgent(Agent):
         On tick handler
         Returns: None
         """
-        print(bid, ask, tick_number)
+        print(bid, ask, self.tick_number)
         self.tick_number += 1
         self.agent_core.update_bid_ask_mid_spread(bid, ask, modify_change=True)
                 
