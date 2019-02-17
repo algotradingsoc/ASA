@@ -20,7 +20,7 @@ class AgentCore():
     
     def check_hold(self, tick):
         if tick < self.hold:
-            return True ## In hold period
+            return True ## (In hold period)
         else:
             return False
     

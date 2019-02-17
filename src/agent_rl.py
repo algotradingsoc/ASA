@@ -17,11 +17,11 @@ PORT = 65430
 
 class RLAgent(Agent):
     name = "RL_Agent"
-    def __init__(self,
+    def __init__(self, hold=10,
                  file_length=None,
                  verbose=False,   ## prints key info
-                 visualise=False, ## visualising with bokeh
-                 verbose_ticks=False, ## prints ticks
+                 visualise=True, ## visualising with bokeh
+                 verbose_ticks=True, ## prints ticks
                  debug=False,     ## prints network actions at each step
                  train=True,      ## trains model, false uses current weights
                  load_model=False,## loads pretrained model
@@ -30,6 +30,7 @@ class RLAgent(Agent):
         
         
         self.constants = {'name': RLAgent.name,
+                          'hold': hold,
                           'diff_step': 20,
                           'action_size': 4, ## buy, sell, cancel, do nothing
                           'mid': 100, 'mid_ma': 2000,
@@ -53,9 +54,8 @@ class RLAgent(Agent):
         ## Variables
         """ Values change during training """
         self.tick_number, self.bar_number = 0, 0
-        self.hold = 100                 ## variable
         self.risk = RiskMetrics()
-        self.agent_core = AgentCore()
+        self.agent_core = AgentCore(hold=hold)
         
         self.constants['inst_state_size'] = len(self.get_inst_inputs())
         self.constants['ma_diff_buffer_size'] = self.ma_diff_buffer.shape[0]
@@ -81,6 +81,8 @@ class RLAgent(Agent):
         self.update_ma_diff_buffer() 
         
         if self.agent_core.check_hold(self.tick_number):
+            if self.constants['verbose']:
+                print(f"holding")
             return 
         
         if self.orders: 
