@@ -39,8 +39,8 @@ class AgentCore():
     def update_order(self, order):
         assert order ## ensures an order is open therefore a diff is valid
         self.order_length += 1
-        self.diff = get_diff(order)
-        self.order_dir = get_order_dir(order)
+        self.diff = self.get_diff(order)
+        self.order_dir = self.get_order_dir(order)
         return
     
     
