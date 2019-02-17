@@ -65,7 +65,7 @@ class RLAgent(Agent):
         self.agent_core = AgentCore()
         
         self.DQ = DeepQNN(self.constants)
-        
+        print("init")
         
         
     def on_tick(self, bid, ask):
