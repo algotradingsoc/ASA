@@ -61,9 +61,11 @@ class RLAgent(Agent):
         
         super().__init__(**kwargs)
         
-        self.DQ = DeepQNN(self.constants)
         self.risk = RiskMetrics()
         self.agent_core = AgentCore()
+        
+        self.DQ = DeepQNN(self.constants)
+        
         
         
     def on_tick(self, bid, ask):
