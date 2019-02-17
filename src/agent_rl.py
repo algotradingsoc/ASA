@@ -58,12 +58,12 @@ class RLAgent(Agent):
         
         self.constants['inst_state_size'] = len(self.get_inst_inputs())
         self.constants['ma_diff_buffer_size'] = self.ma_diff_buffer.shape[0]
-        
+        print("checkpoint1")
         super().__init__(**kwargs)
-        
+        print("checkpoint2")
         self.risk = RiskMetrics()
         self.agent_core = AgentCore()
-        
+        print("checkpoint3")
         self.DQ = DeepQNN(self.constants)
         print("init")
         
