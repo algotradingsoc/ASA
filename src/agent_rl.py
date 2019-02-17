@@ -35,7 +35,7 @@ class RLAgent(Agent):
                           'memory': 1000, 'order_memory': 1000, 
                           'verbose': verbose, 'visualise': visualise,
                           'verbose_ticks': verbose_ticks, 'debug': debug,
-                          'write': write, 'train': train, 'load_model': load_model,
+                          'train': train, 'load_model': load_model,
                           'backtest_file_length': file_length}
         
 
