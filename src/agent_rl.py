@@ -194,8 +194,8 @@ class RLAgent(Agent):
                        [self.agent_core.change['spread']], 
                        [self.agent_core.order_dir], 
                        [self.agent_core.diff],
-                       [self.current_trade['max_drawdown']], 
-                       [self.current_trade['max_upside']]]  
+                       [self.risk.current_trade['max_drawdown']], 
+                       [self.risk.current_trade['max_upside']]]  
         return inst_inputs
          
 
@@ -237,8 +237,8 @@ class RLAgent(Agent):
 #                 print("{: .5f} |\t{: .5f}\t{: .5f} |\t{: .5f}\t{: .5f}"
 #                       .format(self.diff, 
 #                               self.bid_diff, self.ask_diff, 
-#                               self.current_trade['max_drawdown'], 
-#                               self.current_trade['max_upside']))
+#                               self.risk.current_trade['max_drawdown'], 
+#                               self.risk.current_trade['max_upside']))
 #         else:
 #             if self.constants['verbose'] and self.constants['verbose_ticks']:
 #                 print("{: .5f}\t{: .5f}"
