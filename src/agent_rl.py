@@ -19,7 +19,7 @@ class RLAgent(Agent):
     name = "RL_Agent"
     def __init__(self, hold=10,
                  file_length=None,
-                 verbose=False,   ## prints key info
+                 verbose=True,   ## prints key info
                  visualise=True, ## visualising with bokeh
                  verbose_ticks=True, ## prints ticks
                  debug=False,     ## prints network actions at each step
