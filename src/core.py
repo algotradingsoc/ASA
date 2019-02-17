@@ -64,18 +64,10 @@ class AgentCore():
 
     def print_status(self, orders):
         if orders:
-            print("\
-                  Mid:  {: .3f} | Change: {: .3f} | Spread: {: .3f}\n\
-                  Diff: {: .3f} | Length: {}\
-                  ".format(self.order_length, 
-                           self.mid,
-                           self.spread, 
-                           self.diff,
-                           self.change['ask']))
+            print("Mid:  {: .3f} | Change: {: .3f} | Spread: {: .3f}\nDiff: {: .3f} | Length: {}"
+                  .format(self.mid, self.change['ask'], self.spread,
+                          self.diff, self.order_length))
         else:
-            print(
-                "\
-                Mid: {self.mid: .3f} | Spread: {self.spread: .3f}\
-                ")
+            print("Mid: {self.mid: .3f} | Spread: {self.spread: .3f}")
         
         
