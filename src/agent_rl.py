@@ -55,17 +55,16 @@ class RLAgent(Agent):
         """ Values change during training """
         self.tick_number, self.bar_number = 0, 0
         self.hold = 100                 ## variable
+        self.risk = RiskMetrics()
+        self.agent_core = AgentCore()
         
         self.constants['inst_state_size'] = len(self.get_inst_inputs())
         self.constants['ma_diff_buffer_size'] = self.ma_diff_buffer.shape[0]
-        print("checkpoint1")
+        
         super().__init__(**kwargs)
-        print("checkpoint2")
-        self.risk = RiskMetrics()
-        self.agent_core = AgentCore()
-        print("checkpoint3")
+        
         self.DQ = DeepQNN(self.constants)
-        print("init")
+        
         
         
     def on_tick(self, bid, ask):
