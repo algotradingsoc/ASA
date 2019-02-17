@@ -8,7 +8,7 @@ class AgentCore():
         self.spread = None
         self.change = {'bid':None, 'ask':None, 'mid':None, 'spread':None}
         
-        self.order_lemgth = 0
+        self.order_length = 0
         self.diff = None
         self.order_dir = None
         
