@@ -130,7 +130,7 @@ class RLAgent(Agent):
     def on_order(self, order):
         """ On order handler """        
         if self.constants['verbose']:
-            print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.DQ.variables['rnd_choice']: }")
+            print(f"ORDER:\t{self.agent_core.spread * 1000: .3f}\t{order.type}\t{self.DQ.variables['rnd_choice']: }")
         
         inst = self.get_inst_inputs()
         lstm = self.rnn_input
