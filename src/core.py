@@ -1,7 +1,8 @@
-from collections import namedtuple
+from collections import deque
+import numpy as np
 
 class AgentCore():
-    def __init__(self, hold=10, mv_average=None):
+    def __init__(self, hold=10):
         self.bid = None
         self.ask = None
         self.mid = None
@@ -13,10 +14,6 @@ class AgentCore():
         self.order_dir = None
         
         self.hold = hold
-        
-        if mv_average != None:
-            pass
-    
     
     def check_hold(self, tick):
         if tick < self.hold:
@@ -76,4 +73,62 @@ class AgentCore():
         else:
             print(f"Mid: {self.mid: .5f} | Spread: {self.spread: .5f}")
         
+
         
+class Buffer():
+    def __init__(self, buffer_length=100, step=1, rnn_input=False):
+        self.buffer_length = buffer_length
+        self.step = step
+        self.rnn_input = rnn_input
+        self.buffer = deque(maxlen=self.buffer_length)
+        
+        if self.rnn_input:
+            self.rnn_input_template = self._get_rnn_in_template()
+            pass
+    
+    
+    def append(self, val):
+        self.buffer.append(val)
+        
+        
+    def get_array(self):
+        """ Returns np.array from the deque """
+        return np.array(self.buffer)
+    
+    
+    def get_mean(self):
+        arr = self.get_array()
+        return np.mean(arr)
+    
+    
+    def get_vals_at_steps_reversed(self):
+        """ Returns array with data at every step.
+        Starts from end (most recent deque input) """
+        arr = self.get_array()
+        return arr[::-self.step]
+    
+    
+    def get_diff_array(self, arr):
+        """ Returns array of differences between steps """
+        return np.diff(arr)
+    
+    
+    def _copy_into_template(self, arr):
+        """ From template, copies values in for rnn input """
+        copy = self.rnn_input_template
+        copy[-len(arr):] = arr[:]
+        return copy
+    
+    
+    def get_rnn_input(self):
+        assert self.rnn_input ## Buffer not initialised with rnn_input
+        arr = self.get_vals_at_steps_reversed()
+        diff_arr = self.get_diff_array(arr)
+        assert diff_arr.shape[0] != 0 ## Catches beginning if not enough input is given, possibly too short a hold period
+        return self._copy_into_template(diff_arr)
+        
+    
+    def _get_rnn_in_template(self):
+        return np.zeros(self.buffer_length)[::-self.step]
+    
+   

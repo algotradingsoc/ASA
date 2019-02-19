@@ -1,11 +1,11 @@
 from pedlar.agent import Agent
 from risk import RiskMetrics
-from core import AgentCore
+from core import AgentCore, Buffer
 from rl_ml import DeepQNN
 from backtest_funcs import print_backtest_status
 
-
 import socket
+from struct import pack
 
 import numpy as np
 
@@ -17,24 +17,30 @@ PORT = 65430
 
 class RLAgent(Agent):
     name = "RL_Agent"
-    def __init__(self, hold=10,
-                 file_length=None,
-                 verbose=True,   ## prints key info
-                 visualise=True, ## visualising with bokeh
-                 verbose_ticks=True, ## prints ticks
-                 debug=False,     ## prints network actions at each step
-                 train=True,      ## trains model, false uses current weights
-                 load_model=False,## loads pretrained model
+    def __init__(self, 
+                 hold=10,               ## start hold period
+                 diff_step=20,          ## difference step
+                 mid=100,               ## length of mid buffer
+                 mid_ma=2000,           ## length of mid moving average buffer
+                 memory=1000,           ## length of memory holding all states
+                 order_memory=1000,     ## length of the memory holding orders
+                 file_length=None,      ## length of backtest file
+                 verbose=True,          ## prints key info
+                 visualise=True,        ## visualising with bokeh
+                 verbose_ticks=True,    ## prints ticks
+                 debug=False,           ## prints network actions at each step
+                 train=True,            ## trains model, false uses current weights
+                 load_model=False,      ## loads pretrained model
                  **kwargs):
         
         
         
         self.constants = {'name': RLAgent.name,
                           'hold': hold,
-                          'diff_step': 20,
+                          'diff_step': diff_step,
                           'action_size': 4, ## buy, sell, cancel, do nothing
-                          'mid': 100, 'mid_ma': 2000,
-                          'memory': 1000, 'order_memory': 1000, 
+                          'mid': mid, 'mid_ma': mid_ma,
+                          'memory': memory, 'order_memory': order_memory, 
                           'verbose': verbose, 'visualise': visualise,
                           'verbose_ticks': verbose_ticks, 'debug': debug,
                           'train': train, 'load_model': load_model,
@@ -46,10 +52,12 @@ class RLAgent(Agent):
 #             msg = '0.0,0.0,0.0,0.0,0.0'
 #             self.send_to_socket(msg)
         
-        ## Buffers
-        self.mid_buffer = deque(maxlen=self.constants['mid'])
-        self.mid_ma_buffer = deque(maxlen=self.constants['mid_ma'])
-        self.ma_diff_buffer = self._get_max_ma()
+        ## Buffers       
+        self.mid_buffer = Buffer(buffer_length=self.constants['mid'])
+        self.mid_ma_buffer = Buffer(buffer_length=self.constants['mid_ma'], 
+                                    step=self.constants['diff_step'],
+                                    rnn_input=True)
+        self.rnn_input = None
         
         ## Variables
         """ Values change during training """
@@ -58,7 +66,7 @@ class RLAgent(Agent):
         self.agent_core = AgentCore(hold=hold)
         
         self.constants['inst_state_size'] = len(self.get_inst_inputs())
-        self.constants['ma_diff_buffer_size'] = self.ma_diff_buffer.shape[0]
+        self.constants['ma_diff_buffer_size'] = self.mid_ma_buffer.rnn_input_template.shape[0]
         
         super().__init__(**kwargs)
         
@@ -76,9 +84,10 @@ class RLAgent(Agent):
         self.agent_core.update_bid_ask_mid_spread(bid, ask, modify_change=True)
                 
         self.mid_buffer.append(self.agent_core.mid) 
-        mid_ma = np.mean(np.array(self.mid_buffer))
+        mid_ma = self.mid_buffer.get_mean()
         self.mid_ma_buffer.append(mid_ma)
-        self.update_ma_diff_buffer() 
+        self.rnn_input = self.mid_ma_buffer.get_rnn_input()
+        
         
         if self.agent_core.check_hold(self.tick_number):
             if self.constants['verbose']:
@@ -101,10 +110,8 @@ class RLAgent(Agent):
                                   freq=100)
             if self.constants['verbose_ticks']:
                 self.agent_core.print_status(self.orders)
-                
-        
         inst = self.get_inst_inputs()
-        lstm = self.ma_diff_buffer
+        lstm = self.rnn_input
         self.DQ.memory = self.DQ.main_loop(self.DQ.memory, inst, lstm, self.orders)
         self.act(self.DQ.variables['action'])
         return
@@ -126,7 +133,7 @@ class RLAgent(Agent):
             print(f"ORDER:\t{self.spread * 1000: .3f}\t{order.type}\t{self.DQ.variables['rnd_choice']: }")
         
         inst = self.get_inst_inputs()
-        lstm = self.ma_diff_buffer
+        lstm = self.rnn_input
         self.DQ.order_memory = self.DQ.main_loop(self.DQ.order_memory, 
                                                  inst, lstm, self.orders, 
                                                  new_action=False)   
@@ -142,7 +149,7 @@ class RLAgent(Agent):
                                                            self.agent_core.order_length,
                                                            self.DQ.variables['rnd_choice'])
         inst = self.get_inst_inputs()
-        lstm = self.ma_diff_buffer
+        lstm = self.rnn_input
         self.DQ.order_memory = self.DQ.main_loop(self.DQ.order_memory, 
                                                  inst, lstm, self.orders,
                                                  reward=profit, done=True,
@@ -171,19 +178,6 @@ class RLAgent(Agent):
         self.risk.close_current(profit)
         return
     
-            
-    
-    def update_ma_diff_buffer(self):
-        mids = np.array(self.mid_ma_buffer) ## Converts deque to np.array
-        mids = mids[::-self.constants['diff_step']] ## Gets data point every diff_step
-        mids = np.reshape(mids, mids.shape[0]) 
-        diff_arr = np.diff(mids)            ## Calculates difference between points
-        if diff_arr.shape[0] == 0:          
-            ## Catches beginning if self.hold is too small so no data is in diff_arr
-            return
-        ## Replaces the end values of the array to be fed into the RNN
-        self.ma_diff_buffer[-len(diff_arr):] = diff_arr[:]  
-        return
     
                 
     def get_inst_inputs(self):
@@ -216,14 +210,6 @@ class RLAgent(Agent):
             pass
         return
         
-    
-    def _get_max_ma(self):
-        """ Returns full moving average buffer - used in setup """
-        return np.zeros(self.constants['mid_ma'])[::-self.constants['diff_step']]
-    
-
-    
-
  
                   
 #     def send_to_socket(self, msg):
