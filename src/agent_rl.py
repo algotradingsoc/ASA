@@ -48,7 +48,7 @@ class RLAgent(Agent):
         
 
             
-#         if self.constants['visualise']:  ### sourt out writing to socket
+#         if self.constants['visualise']:  ### sort out writing to socket
 #             msg = '0.0,0.0,0.0,0.0,0.0'
 #             self.send_to_socket(msg)
         

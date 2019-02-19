@@ -124,7 +124,8 @@ class Buffer():
         assert self.rnn_input ## Buffer not initialised with rnn_input
         arr = self.get_vals_at_steps_reversed()
         diff_arr = self.get_diff_array(arr)
-        assert diff_arr.shape[0] != 0 ## Catches beginning if not enough input is given, possibly too short a hold period
+        if diff_arr.shape[0] != 0 
+            return## Catches beginning if not enough input is given, possibly too short a hold period
         return self._copy_into_template(diff_arr)
         
     
