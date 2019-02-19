@@ -72,7 +72,7 @@ class RLAgent(Agent):
         
         self.DQ = DeepQNN(self.constants)
         
-        
+        print("Complete setup")
         
     def on_tick(self, bid, ask):
         """ 
