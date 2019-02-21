@@ -72,7 +72,7 @@ class SharpeAgent(Agent):
                 self.price_list.append(bid)
                 self.std=np.std(self.price_list)
                 sharpe = (bid - o.price )/self.std
-            if o.type == "sell":
+            elif o.type == "sell":
                 self.price_list.append(ask)
                 self.std=np.std(self.price_list)
                 sharpe=(o.price - ask )/self.std
