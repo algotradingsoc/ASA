@@ -1,16 +1,16 @@
-""" Sharpe Ratio """
+""" Information Ratio """
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import deque
 from pedlar.agent import Agent
 import time as tm
 
 
 
-class SharpeAgent(Agent):
-    name = "sharpe"
-    def __init__(self, **kwargs):
+class IRAgent(Agent):
+    name = "IR"
+    def __init__(self, verbose=False, **kwargs):
+        self.verbose=verbose
         self.slow = deque(maxlen=128)
         self.fast = deque(maxlen=32)
         self.last_order = None
@@ -53,9 +53,9 @@ class SharpeAgent(Agent):
                 return
             fast_avg = sum(self.fast)/len(self.fast)
             slow_avg = sum(self.slow)/len(self.slow)
-            fast_sharpe = (fast_avg ) / np.std(self.fast)   # use std to measure volatility
-            slow_sharpe = (slow_avg ) / np.std(self.slow)
-            if fast_avg!=slow_avg:
+            fast_ir = fast_avg / np.std(self.fast)   # use std to measure volatility
+            slow_ir = slow_avg / np.std(self.slow)
+            if fast_avg != slow_avg:
                 print('-------start making trades-------')
                 if fast_avg > slow_avg:
                     self.buy()
@@ -64,34 +64,34 @@ class SharpeAgent(Agent):
                 return
 
 
-        # when the sharpe ratio for current value > 1, close the order
+        # when the information ratio for current value > 1, close the order
         if self.orders:
             o = self.orders[self.last_order]
             print('with order', o.id)
             if o.type=='buy':
                 self.price_list.append(bid)
                 self.std=np.std(self.price_list)
-                sharpe = (bid - o.price )/self.std
+                ir = (bid - o.price )/self.std
             elif o.type == "sell":
                 self.price_list.append(ask)
                 self.std=np.std(self.price_list)
-                sharpe=(o.price - ask )/self.std
+                ir=(o.price - ask ) / self.std
 
-            print('sharpe:',sharpe)
+            print('IR:',ir)
 
-            if (sharpe > 1):
+            if (ir > 1):
                 print('-----------------close order')
-                print('sharpe: '+str(sharpe))
+                print('IR: '+str(ir))
                 self.close()
             return
 
 if __name__ == "__main__":
     backtest=False
     if not backtest:
-        agent = SharpeAgent(username="memes", password="memes",
+        agent = IRAgent(username="memes", password="memes",
                             ticker="tcp://icats.doc.ic.ac.uk:7000",
                             endpoint="http://icats.doc.ic.ac.uk")
     else:
-        agent = SharpeAgent(backtest="backtest_GBPUSD.csv")
-  # OR agent = SharpeAgent.from_args() # python3 sharpe.py -b backtest_GBPUSD.csv
+        agent = IRAgent(backtest="backtest_GBPUSD.csv")
+  # OR agent = IRAgent.from_args() # python3 IR.py -b backtest_GBPUSD.csv
     agent.run()
