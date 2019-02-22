@@ -183,6 +183,13 @@ class RLAgent(Agent):
                 
         if self.constants['train']:
             self.AC.train()
+
+        if self._last_order_id % 4 == 0:
+            """ Saves weights """
+            self.AC.save(f'models/target_critic_weights.h5',
+                         self.AC.target_critic_model)
+            self.AC.save(f'models/target_actor_weights.h5',
+                         self.AC.target_actor_model)
     
 
     def update_bid_ask_mid_spread(self, bid, ask):

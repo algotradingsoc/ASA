@@ -27,7 +27,7 @@ class ActorCritic:
         self.memory = deque(maxlen=self.constants['memory'])
         self.order_memory = deque(maxlen=self.constants['order_memory'])
 
-        ##Hyper parameters
+        ##hyper-parameters
         self.batch_size = 32
         self.gamma = 0.99
         self.tau = 0.125
@@ -47,18 +47,27 @@ class ActorCritic:
         self.actor_state_input, self.actor_model = self.create_actor_model()
         _, self.target_actor_model = self.create_actor_model()
 
-        self.actor_critic_grad = tf.placeholder(tf.float32, [None, self.constants['action_size']])
+        #load weights if 'load_model' == True
+        if self.constants['load_model']:
+            name = "target_actor"
+            self.model = self.load(f"models/{name}_weights.h5", self.model)
+
+        self.actor_critic_grad = tf.placeholder(tf.float32, [None, self.constants['action_size']]) #feed de/dC (from critic)
 
         actor_model_weights = self.actor_model.trainable_weights
-        self.actor_grads = tf.gradients(self.actor_model.output, actor_model_weights, -self.actor_critic_grad) #compute dC/dA
+        self.actor_grads = tf.gradients(self.actor_model.output, actor_model_weights, -self.actor_critic_grad) #compute dC/dA (from actor)
         grads = zip(self.actor_grads, actor_model_weights)
         self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
 
         ##critic model
         self.critic_state_input, self.critic_action_input, \
 			self.critic_model = self.create_critic_model()
-        
         _,_, self.target_critic_model = self.create_critic_model()
+
+        #load weights if 'load_model' == True
+        if self.constants['load_model']:
+            name = "target_critic"
+            self.model = self.load(f"models/{name}_weights.h5", self.model)
 
         self.critic_grads = tf.gradients(self.critic_model.output, self.critic_action_input) #compute de/dC
 
