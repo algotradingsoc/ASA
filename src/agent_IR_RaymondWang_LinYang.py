@@ -1,6 +1,4 @@
-#trying
 """ Information Ratio """
-import argparse
 import numpy as np
 from collections import deque
 from pedlar.agent import Agent
@@ -26,8 +24,8 @@ class IRAgent(Agent):
     # print order when placing an order
     def on_order(self, order):
         """On order handler."""
-        print('----------------------------------------------')
-        print("ORDER: ", order)
+        if self.verbose:
+            print(f"Order: {order}")
         self.order_in_progress=True
         self.last_order=order.id
         self.price_list=[]
@@ -35,8 +33,8 @@ class IRAgent(Agent):
     # print the profit after the order is closed
     def on_order_close(self, order, profit):
         """On order close handler."""
-        print("PROFIT:", profit)
-        print('----------------------------------------------')
+        if self.verbose:
+            print(f"PROFIT: {profit}")
         self.order_in_progress=False
         self.total_profit+=profit
         self.total_profit_list.append(self.total_profit)
@@ -45,7 +43,8 @@ class IRAgent(Agent):
 
     def on_tick(self, bid, ask, time=None):
         """On tick handler."""
-        print("Tick:", bid, ask)
+        if self.verbose:
+            print(f"Tick: {bid} {ask}")
         if not (self.orders):
             #print('no order')
             self.slow.append(bid)
