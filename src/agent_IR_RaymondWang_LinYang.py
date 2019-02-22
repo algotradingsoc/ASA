@@ -21,7 +21,7 @@ class IRAgent(Agent):
         super().__init__(**kwargs)
 
 
-    # print order when placing an order
+    """ Print order. Resets price_list, and updates last_order with current order.id """
     def on_order(self, order):
         """On order handler."""
         if self.verbose:
@@ -30,7 +30,7 @@ class IRAgent(Agent):
         self.last_order=order.id
         self.price_list=[]
 
-    # print the profit after the order is closed
+    """ print the profit after the order is closed """
     def on_order_close(self, order, profit):
         """On order close handler."""
         if self.verbose:
@@ -46,17 +46,19 @@ class IRAgent(Agent):
         if self.verbose:
             print(f"Tick: {bid} {ask}")
         if not (self.orders):
-            #print('no order')
             self.slow.append(bid)
             self.fast.append(bid)
-            if np.std(self.fast) == 0 or np.std(self.slow) == 0:
+            fast_std = np.std(self.fast)
+            slow_std = np.std(self.slow)
+            if fast_std == 0 or slow_std == 0:
                 return
             fast_avg = sum(self.fast)/len(self.fast)
             slow_avg = sum(self.slow)/len(self.slow)
-            fast_ir = fast_avg / np.std(self.fast)   # use std to measure volatility
-            slow_ir = slow_avg / np.std(self.slow)
+            fast_ir = fast_avg / fast_std   # use std to measure volatility
+            slow_ir = slow_avg / slow_std
             if fast_avg != slow_avg:
-                print('-------start making trades-------')
+                if self.verbose:
+                    print('-------start making trades-------')
                 if fast_avg > slow_avg:
                     self.buy()
                 else:
@@ -67,7 +69,8 @@ class IRAgent(Agent):
         # when the information ratio for current value > 1, close the order
         if self.orders:
             o = self.orders[self.last_order]
-            print('with order', o.id)
+            if self.verbose:
+                print(f"with order: {o.id}")
             if o.type=='buy':
                 self.price_list.append(bid)
                 self.std=np.std(self.price_list)
@@ -77,18 +80,20 @@ class IRAgent(Agent):
                 self.std=np.std(self.price_list)
                 ir=(o.price - ask ) / self.std
 
-            print('IR:',ir)
+            if self.verbose:
+                print('IR:',ir)
 
             if (ir > 1):
-                print('-----------------close order')
-                print('IR: '+str(ir))
+                if self.verbose:
+                    print("Order close")
+                    print(f"IR: {ir}")
                 self.close()
             return
 
 if __name__ == "__main__":
     backtest=False
     if not backtest:
-        agent = IRAgent(username="memes", password="memes",
+        agent = IRAgent(username="algosoc", password="1234",
                             ticker="tcp://icats.doc.ic.ac.uk:7000",
                             endpoint="http://icats.doc.ic.ac.uk")
     else:
