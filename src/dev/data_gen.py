@@ -87,13 +87,13 @@ def get_portfolio_return(log_returns):
     print(f"Average yearly return: {average_yearly_return * 100}")
         
         
-def sma_visual(df, short_period=20, long_period=100):
+def sma_visual(df, short_period=20, long_period=200):
     short_rolling = df.rolling(window=short_period).mean()
     long_rolling = df.rolling(window=long_period).mean()
     
     fig, ax = plt.subplots(figsize=(16,9))
     ax.plot(df.index, df.loc[:,'0'], label='Price')
-    ax.plot(long_rolling.index, long_rolling.loc[:,'0'], label = "100 day SMA")
+    ax.plot(long_rolling.index, long_rolling.loc[:,'0'], label = "200 day SMA")
     ax.plot(short_rolling.index, short_rolling.loc[:,'0'], label = "20 day SMA")
     
     ax.legend(loc='best')
@@ -107,7 +107,7 @@ def ema_visual(df, period=20):
     
     fig, ax = plt.subplots(figsize=(16,9))
     ax.plot(df.index, df.loc[:,:], label='Price')
-    ax.plot(ema_short.index, ema_short.loc[:,:], label = "20 day EMA")
+    ax.plot(ema_short.index, ema_short.loc[:,:], label = "250 day EMA")
     
     ax.legend(loc='best')
     ax.set_ylabel('Price in $')
@@ -123,20 +123,28 @@ def ema_strat(df, period=20, visual=None):
         visual_ema_strat(df, ema_short, trading_positions_final, visual)
         
     asset_log_returns = np.log(df).diff()
-    print(asset_log_returns.head())
+    print(asset_log_returns.cumsum().tail(1)['0'])
+    
         
     
 def visual_ema_strat(df, ema_short, trading_positions_final, asset):
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16,9))
-    ax1.plot(df.index, df.loc[:,asset], label=f'Price of {asset}')
-    ax1.plot(ema_short.index, ema_short.loc[:,asset], label=f'EMA of {asset}')
+    asset_log_returns = np.log(df).diff()
+    print(asset_log_returns.cumsum().tail(1)['0'])
+    
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(16,9))
+    
+    ax1.plot(df.index, df.loc[:,asset], label=f'Price ')
+    ax1.plot(ema_short.index, ema_short.loc[:,asset], label=f'EMA')
     
     ax1.set_ylabel('$')
     ax1.legend(loc='best')
     
     ax2.plot(trading_positions_final.index, trading_positions_final.loc[:,asset], label='Trading position')
-    
     ax2.set_ylabel('Trading position')
+    
+    ax3.plot(asset_log_returns.index, asset_log_returns.cumsum().loc[:,asset], label="Cumulative Log Returns")
+    ax3.set_ylabel('Trading position')
+    
     plt.show()
     
         
@@ -147,19 +155,18 @@ if __name__=='__main__':
     df = pd.DataFrame()
     for i in range(3):
         x1 = Brown(start=1000, record=True)
-        x1.run_add(1000, scale=True)
+        x1.run_add(2000, scale=True)
         df[f'{i}'] = pd.Series(x1.hist)
     
     ## relative returns 
-    returns = df.pct_change(1)
-    log_returns = np.log(df).diff()
+    #returns = df.pct_change(1)
+    #log_returns = np.log(df).diff()
     
     #log_return_visual(log_returns)
-    #get_portfolio_return(log_returns)
+    #print(get_portfolio_return(log_returns))
     #sma_visual(df)
     
-    #ema_visual(df)
-    ema_strat(df, period=100, visual=['0','1'])
+    ema_strat(df, period=500, visual='0')
     
     
     

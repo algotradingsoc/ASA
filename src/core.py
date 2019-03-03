@@ -13,6 +13,8 @@ class AgentCore():
         self.diff = None
         self.order_dir = None
         
+        self.previous = None
+        
         self.hold = hold
     
     def check_hold(self, tick):
@@ -32,11 +34,13 @@ class AgentCore():
         return
     
     
+    
     def update_change(self,bid, ask, mid, spread):
         self.change['bid'] = bid - self.bid
         self.change['ask'] = ask - self.ask
         self.change['mid'] = mid - self.mid
         self.change['spread'] = spread - self.spread
+        self.previous = self.mid
     
     
     def update_order(self, order):

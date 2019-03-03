@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class RiskMetrics:
     def __init__(self):
@@ -51,9 +52,16 @@ class RiskMetrics:
                             "sharpe":sharpe,
                             "RoMDD":return_maxdrawdown,
                             "USoDD":upside_over_drawdown}
-        
         return analysis_results
-        
+    
+    def cumulative_return(self, visual=True):
+        cumsum = np.cumsum(self.returns)
+        if visual:
+            plt.plot(cumsum)
+            plt.xlabel("Order Number")
+            plt.ylabel("Cumulative Return (£)")
+            plt.show()
+        return cumsum
     
     
     
