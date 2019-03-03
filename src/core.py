@@ -112,8 +112,10 @@ class Buffer():
         return arr[::-self.step]
     
     
-    def get_diff_array(self, arr):
+    def get_diff_array(self, arr=None):
         """ Returns array of differences between steps """
+        if arr is None:
+            arr = self.get_array()
         return np.diff(arr)
     
     

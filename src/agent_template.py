@@ -6,10 +6,9 @@ from core import AgentCore, Buffer
 import numpy as np
 
 class TemplateAgent(Agent):
-    name = "namey mcnameface"
+    name = "template agent"
     
     def __init__(self, **kwargs):
-        
         
         super().__init__(**kwargs)
         
@@ -22,8 +21,9 @@ class TemplateAgent(Agent):
     def on_order_close(self, order, profit):
         pass
     
-if __name__=='__main__':
     
+    
+if __name__=='__main__':
     backtest = False
     if backtest:
         filename="data/1yr_backtest_GBPUSD.csv"
