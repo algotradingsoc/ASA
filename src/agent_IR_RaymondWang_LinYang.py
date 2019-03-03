@@ -1,8 +1,13 @@
-""" Information Ratio """
+""" 
+Created by Raymond Wang & Lin Yang 
+Information Ratio 
+"""
 import numpy as np
 from collections import deque
 from pedlar.agent import Agent
 import time as tm
+
+from risk import RiskMetrics
 
 
 
@@ -15,9 +20,9 @@ class IRAgent(Agent):
         self.last_order = None
         self.price_list=[]
         self.std=0
-        self.total_profit_list=[]
-        self.total_profit=0
         self.order_in_progress=False
+        
+        self.risk = RiskMetrics() 
         super().__init__(**kwargs)
 
 
@@ -28,16 +33,15 @@ class IRAgent(Agent):
             print(f"Order: {order}")
         self.order_in_progress=True
         self.last_order=order.id
-        self.price_list=[]
+        
 
     """ print the profit after the order is closed """
     def on_order_close(self, order, profit):
         """On order close handler."""
         if self.verbose:
-            print(f"PROFIT: {profit}")
-        self.order_in_progress=False
-        self.total_profit+=profit
-        self.total_profit_list.append(self.total_profit)
+            print(f"Profit: {profit}")
+        self.order_in_progress=False        
+        self.risk.close_current(profit)
 
 
 
@@ -60,8 +64,10 @@ class IRAgent(Agent):
                 if self.verbose:
                     print('-------start making trades-------')
                 if fast_avg > slow_avg:
+                    self.price_list=[bid]
                     self.buy()
                 else:
+                    self.price_list=[ask]
                     self.sell()
                 return
 
@@ -70,18 +76,15 @@ class IRAgent(Agent):
         if self.orders:
             o = self.orders[self.last_order]
             if self.verbose:
-                print(f"with order: {o.id}")
-            if o.type=='buy':
+                print(f"Order ID: {o.id}")
+            if o.type == 'buy':
                 self.price_list.append(bid)
-                self.std=np.std(self.price_list)
+                self.std = np.std(self.price_list)
                 ir = (bid - o.price )/self.std
-            elif o.type == "sell":
+            elif o.type == 'sell':
                 self.price_list.append(ask)
-                self.std=np.std(self.price_list)
-                ir=(o.price - ask ) / self.std
-
-            if self.verbose:
-                print('IR:',ir)
+                self.std = np.std(self.price_list)
+                ir = (o.price - ask ) / self.std
 
             if (ir > 1):
                 if self.verbose:
@@ -90,13 +93,18 @@ class IRAgent(Agent):
                 self.close()
             return
 
+        
 if __name__ == "__main__":
-    backtest=False
-    if not backtest:
-        agent = IRAgent(username="algosoc", password="1234",
-                            ticker="tcp://icats.doc.ic.ac.uk:7000",
-                            endpoint="http://icats.doc.ic.ac.uk")
+    backtest=True
+    if backtest: 
+        filename="data/1yr_backtest_GBPUSD.csv"
+        agent = IRAgent(backtest=filename)
     else:
-        agent = IRAgent(backtest="backtest_GBPUSD.csv")
-  # OR agent = IRAgent.from_args() # python3 IR.py -b backtest_GBPUSD.csv
+        agent = IRAgent(username="algosoc", password="1234",
+                        ticker="tcp://icats.doc.ic.ac.uk:7000",
+                        endpoint="http://icats.doc.ic.ac.uk")
+
     agent.run()
+
+    if backtest:
+        agent.risk.cumulative_return()
