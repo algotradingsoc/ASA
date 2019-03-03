@@ -8,20 +8,21 @@ class AgentCore():
         self.mid = None
         self.spread = None
         self.change = {'bid':None, 'ask':None, 'mid':None, 'spread':None}
+        self.prev_mid = None
         
         self.order_length = 0
         self.diff = None
         self.order_dir = None
         
-        self.previous = None
-        
         self.hold = hold
+    
     
     def check_hold(self, tick):
         if tick < self.hold:
             return True ## (In hold period)
         else:
             return False
+    
     
     def update_bid_ask_mid_spread(self, bid, ask, modify_change=False):
         mid = (ask + bid)/2
@@ -34,13 +35,12 @@ class AgentCore():
         return
     
     
-    
     def update_change(self,bid, ask, mid, spread):
         self.change['bid'] = bid - self.bid
         self.change['ask'] = ask - self.ask
         self.change['mid'] = mid - self.mid
         self.change['spread'] = spread - self.spread
-        self.previous = self.mid
+        self.prev_mid = self.mid
     
     
     def update_order(self, order):

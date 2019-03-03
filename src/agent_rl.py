@@ -255,3 +255,6 @@ if __name__ == "__main__":
                         ticker="tcp://icats.doc.ic.ac.uk:7000",
                         endpoint="http://icats.doc.ic.ac.uk")
     agent.run()
+    
+    if backtest:
+        agent.risk.cumulative_return()

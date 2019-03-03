@@ -1,8 +1,5 @@
 from pedlar.agent import Agent
 
-from risk import RiskMetrics
-from core import AgentCore, Buffer
-
 import numpy as np
 
 class TemplateAgent(Agent):

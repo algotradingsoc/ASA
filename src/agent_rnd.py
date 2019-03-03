@@ -80,3 +80,5 @@ if __name__ == "__main__":
     
     for i in results:
         print(f"{i}: {results[i]}")
+        
+    agent.risk.cumulative_return()
