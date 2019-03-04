@@ -5,13 +5,10 @@ from core import AgentCore, Buffer
 
 import numpy as np
 
-
-import time as tm
-
 class MACAgent(Agent):
     name = "Moving Average Crossover"
     
-    def __init__(self, ma_1_length=12, ma_2_length=24, verbose=False, **kwargs):
+    def __init__(self, ma_1_length=12, ma_2_length=64, verbose=False, **kwargs):
         self.slow_period = max(ma_1_length, ma_2_length)
         self.fast_period = min(ma_1_length, ma_2_length)
         self.fast_mean = None
