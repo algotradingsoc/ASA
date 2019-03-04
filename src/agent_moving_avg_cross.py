@@ -6,10 +6,12 @@ from core import AgentCore, Buffer
 import numpy as np
 
 
+import time as tm
+
 class MACAgent(Agent):
     name = "Moving Average Crossover"
     
-    def __init__(self, ma_1_length=128, ma_2_length=1280, verbose=False, **kwargs):
+    def __init__(self, ma_1_length=12, ma_2_length=24, verbose=False, **kwargs):
         self.slow_period = max(ma_1_length, ma_2_length)
         self.fast_period = min(ma_1_length, ma_2_length)
         self.fast_mean = None
@@ -33,7 +35,7 @@ class MACAgent(Agent):
             self.risk.update_current(self.agent_core.diff)
         
         if self.verbose:
-            print(f"Bid: {bid}, Ask: {ask}")
+            print(f"Bid: {bid: .5f}, Ask: {ask: .5f}")
         
         self.tick_buffer.append(self.agent_core.mid)
         
@@ -46,9 +48,8 @@ class MACAgent(Agent):
         
         if (self.prev_slow_less_fast) and (self.fast_mean > self.slow_mean):
             self.buy()
-        elif (not self.prev_slow_less_fast) and (self.fast_mean > self.slow_mean):
+        elif (not self.prev_slow_less_fast) and (self.fast_mean < self.slow_mean):
             self.sell()
-            
         self.update_prev_slow_less_fast()
         
         
@@ -58,6 +59,7 @@ class MACAgent(Agent):
         
     def on_order(self, order):
         if self.verbose:
+            print("ORDER")
             print(f"Order: {order}")
     
     
@@ -71,9 +73,10 @@ if __name__=='__main__':
     backtest = True
     if backtest:
         filename="data/1yr_backtest_GBPUSD.csv"
-        agent = MACAgent(backtest=filename)
+        agent = MACAgent(backtest=filename, verbose=False)
     else:
-        agent = MACAgent(username="algosoc",
+        agent = MACAgent(verbose=True,
+                         username="algosoc",
                           password="1234",
                           ticker="tcp://icats.doc.ic.ac.uk:7000",
                           endpoint="http://icats.doc.ic.ac.uk")
