@@ -24,7 +24,7 @@ class MACAgent(Agent):
         super().__init__(**kwargs)
         
         
-    def on_tick(self, bid, ask):
+    def on_tick(self, bid, ask, time=None):
         self.agent_core.update_bid_ask_mid_spread(bid, ask, modify_change=True)
         if self.orders:
             order = self.orders[self._last_order_id]
@@ -52,15 +52,19 @@ class MACAgent(Agent):
         
     def update_prev_slow_less_fast(self):
         self.prev_slow_less_fast = self.slow_mean < self.fast_mean 
+        
+    
+    def on_bar(self, bopen, bhigh, blow, bclose, time=None):
+        pass
     
         
-    def on_order(self, order):
+    def on_order(self, order, time=None):
         if self.verbose:
             print("ORDER")
             print(f"Order: {order}")
     
     
-    def on_order_close(self, order, profit):
+    def on_order_close(self, order, profit, time=None):
         self.risk.close_current(profit)
         if self.verbose:
             print(f"Profit: {profit}")

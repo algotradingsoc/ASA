@@ -1,6 +1,7 @@
 import socket_messaging
 import time
 import csv
+import random
 
 PACKING = '?ifi' ## format data is sent over the socket to bokeh
 
@@ -79,7 +80,30 @@ def gen_same_agent_list(num_of_agents, agent, **kwargs):
     for i in range(num_of_agents):
         agents.append(agent(**kwargs))
     return agents
-        
+
+
+def gen_random_agent_list(Agent, num_of_agents, 
+                          param_names, param_lower, param_upper, 
+                          **kwargs):
+    """Generates a list of agents with different parameters that is varied randomly between a range
+    :param param_names: a list of the two parameter names to be varied eg ['param1', 'param2'] 
+    :param param_lower: a list of the two lower bounds 
+    :param param_upper: a list of the two upper bounds
+    :param num_of_agents: the number of agents to be returned in the list
+    :param kwargs: the rest of the arguments used to initalise the agents
+    :return: list of num_of_agents with the parameters slightly varied
+    """
+    agents = []
+    assert len(param_names) == 2 ## current set at 2 for ease  
+    
+    for i in range(num_of_agents):
+        param1 = random.randrange(param_lower[0], param_upper[0])
+        param2 = random.randrange(param_lower[1], param_upper[1])
+        params = {param_names[0] : param1, param_names[1] : param2}
+        agent_inputs = {**params, **kwargs}
+        agents.append(Agent(**agent_inputs))
+    return agents
+
         
 def print_results_summary(ran_agents):
     """Displays some results from a list of agents that have ran
@@ -93,24 +117,47 @@ def print_results_summary(ran_agents):
         print("total:", results['total'])
         print("# of trades:",results['trades'])
         print("return/max drawdown:", results['RoMDD'])
+        print("return:", agent.balance)
         print("============")
     print("mean return:", total_return/len(ran_agents))
-    return results
-        
-                   
-if __name__=='__main__':
-    num_of_agents = 30
+    print("============")
     
-    backtest = "data/1yr_backtest_GBPUSD.csv"
+                    
+if __name__=='__main__':
+    num_of_agents = 100
+    
+    filename = "data/1yr_backtest_GBPUSD.csv"
     
     from backtest_funcs import get_file_length
     length = get_file_length(filename)
     print(f"Backtest file length: {length}")
     
+    """
     from agent_rnd import RandomAgent
     agents_list = gen_same_agent_list(num_of_agents, RandomAgent, 
                                       choice_on_tick=True, 
-                                      backtest=backtest)
+                                      backtest=filename)
     ran_agents = parallel_backtest(agents_list, send_to_socket=False)
     results = print_results_summary(ran_agents)
+    """
+    
+    from agent_moving_avg_cross import MACAgent
+    
+    agent_list = gen_random_agent_list(MACAgent, num_of_agents,
+                                       ['ma_1_length', 'ma_2_length'],
+                                       [5,50],
+                                       [300,500],
+                                       backtest=filename)
+    ran_agents = parallel_backtest(agent_list, send_to_socket=False)
+    print_results_summary(ran_agents)
+    
+    results = []
+    for agent in ran_agents:
+        results.append([agent.fast_period, agent.slow_period, agent.balance])
+    
+    results.sort(key=lambda x: x[2])
+    
+    for result in results:
+        print(f"{result[0]} \t {result[1]} \t {result[2]}")
+        
     
