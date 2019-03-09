@@ -122,31 +122,22 @@ def print_results_summary(ran_agents):
     print("mean return:", total_return/len(ran_agents))
     print("============")
     
-                    
-if __name__=='__main__':
-    num_of_agents = 100
     
-    filename = "data/1yr_backtest_GBPUSD.csv"
-    
-    from backtest_funcs import get_file_length
-    length = get_file_length(filename)
-    print(f"Backtest file length: {length}")
-    
-    """
+def rnd_agent_example(filename, num_of_agents):
     from agent_rnd import RandomAgent
     agents_list = gen_same_agent_list(num_of_agents, RandomAgent, 
                                       choice_on_tick=True, 
                                       backtest=filename)
     ran_agents = parallel_backtest(agents_list, send_to_socket=False)
     results = print_results_summary(ran_agents)
-    """
     
+    
+def mac_agent_example(filename, num_of_agents):
     from agent_moving_avg_cross import MACAgent
-    
     agent_list = gen_random_agent_list(MACAgent, num_of_agents,
                                        ['ma_1_length', 'ma_2_length'],
                                        [5,50],
-                                       [300,500],
+                                       [1000,2000],
                                        backtest=filename)
     ran_agents = parallel_backtest(agent_list, send_to_socket=False)
     print_results_summary(ran_agents)
@@ -154,10 +145,19 @@ if __name__=='__main__':
     results = []
     for agent in ran_agents:
         results.append([agent.fast_period, agent.slow_period, agent.balance])
-    
     results.sort(key=lambda x: x[2])
-    
     for result in results:
         print(f"{result[0]} \t {result[1]} \t {result[2]}")
+           
+            
+if __name__=='__main__':
+    num_of_agents = 200
+    filename = "data/1yr_backtest_GBPUSD.csv"
+    
+    from backtest_funcs import get_file_length
+    length = get_file_length(filename)
+    print(f"Backtest file length: {length}")
+    
+    mac_agent_example(filename, num_of_agents)
         
     

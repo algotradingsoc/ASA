@@ -70,8 +70,7 @@ class IRAgent(Agent):
                     self.price_list=[ask]
                     self.sell()
                 return
-
-
+            
         # when the information ratio for current value > 1, close the order
         if self.orders:
             o = self.orders[self.last_order]
@@ -103,7 +102,6 @@ if __name__ == "__main__":
         agent = IRAgent(username="algosoc", password="1234",
                         ticker="tcp://icats.doc.ic.ac.uk:7000",
                         endpoint="http://icats.doc.ic.ac.uk")
-
     agent.run()
 
     if backtest:
