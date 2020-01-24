@@ -19,3 +19,21 @@ Here you can find 3 basic agents showing the basic structure of a pedlar agent.
   - You can make a buy order by calling 'self.buy()'
   - You can make a sell order by calling 'self.sell()'
   - You can close any open orders by calling 'self.close()'
+
+
+# Setup
+- Starting in the 'AlgoSoc-Sessions' folder inside the terminal.
+- Create a virtual environment call 'env' and activate the environment. (More info: https://docs.python.org/3/tutorial/venv.html)
+    - Create the enviroment: 
+        - <code>python -m venv env</code>
+    - Activate the environment:
+        - Windows: <code>env/Script/activate</code>
+        - Unix (Mac / Linux): <code>env/bin/activate</code>
+- Install the requirements from the reqs.txt:
+    - <code>python -m pip install -r reqs.txt</code>
+- Navigate into this folder.
+    - <code>cd Intro_agents</code>
+- Run code:
+    - Agent 0 : <code>python -m agent_0_echo.py</code>
+    - Agent 1 : <code>python -m agent_1_simple_macd.py</code>
+    - Agent 2 : <code>python -m agent_2_simple_risk_managed_macd.py</code>

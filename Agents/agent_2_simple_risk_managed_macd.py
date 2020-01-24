@@ -21,7 +21,7 @@ class SimpleRiskMACDAgent(Core):
         self.fast_length = fast_length
         self.slow_length = slow_length
         self.SL_TP = Stop_Loss_Take_Profit(stop_loss_scaling, take_profit_scaling) 
-        
+ 
     def init_tests(self, fast_length, slow_length, rets_length):
         assert fast_length < slow_length, "Fast length must be less than slow length."
         assert fast_length > 0, "Fast length must be more than zero"
@@ -46,7 +46,7 @@ class SimpleRiskMACDAgent(Core):
         if signal > 0:
             self.core_buy(bid, ask)
         elif signal < 0:
-            self.core_sell(bid, ask)   
+            self.core_sell(bid, ask)
 
     def core_order_open(self, est_order_open_price, order_type, bid, ask):
         spread = ask - bid
@@ -57,7 +57,7 @@ class SimpleRiskMACDAgent(Core):
 
 
 def main(fast_length=120, slow_length=250,
-         stop_loss_scaling=2, take_profit_scaling=1.5,
+         stop_loss_scaling=2, take_profit_scaling=1.5, signal_mean_length=10,
          make_orders=True, verbose=True, backtest=None):
     if backtest is None:
         agent = SimpleRiskMACDAgent(fast_length=fast_length,
@@ -65,6 +65,7 @@ def main(fast_length=120, slow_length=250,
                                     stop_loss_scaling=stop_loss_scaling,
                                     take_profit_scaling=take_profit_scaling,
                                     rets_length=slow_length,
+                                    signal_mean_length=signal_mean_length,
                                     make_orders=make_orders,
                                     verbose=verbose,
                                     username='joe', password='1234',
@@ -76,7 +77,11 @@ def main(fast_length=120, slow_length=250,
                                     stop_loss_scaling=stop_loss_scaling,
                                     take_profit_scaling=take_profit_scaling,
                                     rets_length=slow_length,
+                                    signal_mean_length=signal_mean_length,
                                     make_orders=make_orders,
                                     verbose=verbose,
                                     backtest=backtest)
     agent.core_run()
+    print(f"Final session balance accurate est: {agent.est_balance[0]:.03f}")
+    print(f"Final session balance est: {agent.est_balance[1]:.03f}")
+    print("--------------")

@@ -62,7 +62,7 @@ class SimpleSingalVotingAgent(Agent):
             if signal is None:
                 continue
             if req_pf:
-                signal_vol_norm = signal/rolling_std
+                signal_vol_norm = signal / rolling_std
                 pos_func = np.tanh(signal_vol_norm)
             else:
                 pos_func = signal
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     if backtest:
         from util import check_if_in_agents
         check_if_in_agents()
-        agent = SimpleSingalVotingAgent(agents_list,  agents_params,
+        agent = SimpleSingalVotingAgent(agents_list, agents_params,
                                         agents_require_pos_func,
                                         rets_length=100,
                                         backtest='../data/backtest_GBPUSD_12_hours.csv')

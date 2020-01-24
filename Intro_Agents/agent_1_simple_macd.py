@@ -11,7 +11,7 @@ class SimpleMACDAgent(Agent):
                  verbose=False, **kwargs):
         super().__init__(**kwargs)
         self.init_tests(fast_length, slow_length)
-        self.fast = deque(maxlen=fast_length)
+        self.fast = deque(maxlen=fast_length) # a object that will drop the oldest item when a new item is added (if it has reached maxlen). https://docs.python.org/3.6/library/collections.html#collections.deque
         self.slow = deque(maxlen=slow_length)
         self.verbose = verbose  # Controls if the agent should print output.
         self.last_mid = None
@@ -23,19 +23,19 @@ class SimpleMACDAgent(Agent):
 
     def on_tick(self, bid, ask, time=None):
         '''Called on every tick update.'''
-        mid = (bid + ask) / 2
+        mid = (bid + ask) / 2  # we calculate a mid value (a hypothetical value to help us process the tick).
         if self.verbose:
             print(f'Tick: {mid: .05f}, {time}')
         if self.last_mid is None:
-            self.last_mid = mid
+            self.last_mid = mid # on the first tick, stores the current mid so the next tick can access it.
             return
-        signal = self.get_signal(mid)
-        self.order_macd(signal)
+        signal = self.get_signal(mid) # get our signal using the current mid as an input.
+        self.order_macd(signal) # from the signal decide how to trade.
 
     def get_signal(self, mid):
         '''Returns the signal from a macd technical indicator.'''
-        ret = mid-self.last_mid
-        self.fast.append(ret)
+        ret = mid-self.last_mid  # difference between this ticks mid and last ticks mid tells us how much the mid has changed
+        self.fast.append(ret) 
         self.slow.append(ret)
         slow_mean = np.mean(self.slow)
         fast_mean = np.mean(self.fast)
@@ -44,9 +44,9 @@ class SimpleMACDAgent(Agent):
 
     def order_macd(self, signal):
         '''Makes orders based on the signal.'''
-        if signal > 0:
+        if signal > 0: # positive signal so we want to buy. 
             self.buy()
-        elif signal < 0:
+        elif signal < 0: # negative signal so we want to sell. 
             self.sell()
 
     def on_order(self, order):

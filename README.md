@@ -1,13 +1,17 @@
 # :chart_with_upwards_trend: AlgoSoc-Sessions
 
 <p align="center">
-	<img src="https://travis-ci.com/algotradingsoc/ASA.svg?branch=master"
+	<img src="https://travis-ci.com/Joearrowsmith/AlgoSoc-Sessions.svg?branch=master"
      		alt="Build Status">
 	<img src="https://img.shields.io/badge/Python_3.6.3+-orange"
      		alt="Java Version">
-	<img src="https://img.shields.io/github/repo-size/algotradingsoc/ASA"
+	<img src="https://img.shields.io/github/repo-size/joearrowsmith/AlgoSoc-Sessions"
      		alt="Github Repo Size">
 </p>
+
+# Pedlar 2.0 Demo's
+
+[Pedlar 2.0 Repo](https://github.com/algotradingsoc/Demo-notebooks)
 
 ## Content
 

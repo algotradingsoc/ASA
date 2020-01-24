@@ -12,7 +12,7 @@ class SimpleMACDAgent(Core):
     name = "Simple_MACD"
 
     def __init__(self,
-                 fast_length, slow_length, 
+                 fast_length, slow_length,
                  **kwargs):
         super().__init__(**kwargs)
         self.init_tests(fast_length, slow_length)
@@ -45,12 +45,13 @@ class SimpleMACDAgent(Core):
             self.core_sell(bid, ask)
 
 
-def main(fast_length=120, slow_length=250,
+def main(fast_length=120, slow_length=250, signal_mean_length=10,
          make_orders=True, verbose=True, backtest=None):
     if backtest is None:
         agent = SimpleMACDAgent(fast_length=fast_length,
                                 slow_length=slow_length,
                                 rets_length=slow_length,
+                                signal_mean_length=signal_mean_length,
                                 make_orders=make_orders,
                                 verbose=verbose,
                                 username='joe', password='1234',
@@ -60,7 +61,11 @@ def main(fast_length=120, slow_length=250,
         agent = SimpleMACDAgent(fast_length=fast_length,
                                 slow_length=slow_length,
                                 rets_length=slow_length,
+                                signal_mean_length=signal_mean_length,
                                 make_orders=make_orders,
                                 verbose=verbose,
                                 backtest=backtest)
     agent.core_run()
+    print(f"Final session balance accurate est: {agent.est_balance[0]:.03f}")
+    print(f"Final session balance est: {agent.est_balance[1]:.03f}")
+    print("--------------")

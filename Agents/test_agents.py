@@ -11,7 +11,7 @@ def setup_agent_1(make_orders, verbose, backtest):
     from Agents.agent_1_simple_macd import SimpleMACDAgent
     fast, slow = 120, 250
     agent = SimpleMACDAgent(fast_length=fast, slow_length=slow,
-                            rets_length=slow,
+                            rets_length=slow, signal_mean_length=10,
                             make_orders=make_orders, verbose=verbose, backtest=backtest)
     agent.run()
 
@@ -22,7 +22,7 @@ def setup_agent_2(make_orders, verbose, backtest):
     agent = SimpleRiskMACDAgent(fast_length=fast, slow_length=slow,
                                 stop_loss_scaling=2.0,
                                 take_profit_scaling=1.5,
-                                rets_length=slow,
+                                rets_length=slow, signal_mean_length=10,
                                 make_orders=make_orders, verbose=verbose, backtest=backtest)
     agent.run()
 
@@ -33,7 +33,7 @@ def setup_agent_3(make_orders, verbose, backtest):
     agent = RetBoundRiskMACDAgent(fast_length=fast, slow_length=slow,
                                   ret_upper_scaling_factor=5,
                                   ret_lower_scaling_factor=3.1,
-                                  rets_length=slow+20,
+                                  rets_length=slow + 20, signal_mean_length=10,
                                   make_orders=make_orders, verbose=verbose, backtest=backtest)
     agent.run()
 
@@ -46,10 +46,10 @@ def setup_agent_4(make_orders, verbose, backtest):
     prediction_horizon = 20
     target_profit = 0.1
     agent = DecisionTreeAgent(fast_length=fast, slow_length=slow,
-                              prediction_horizon=prediction_horizon, 
+                              prediction_horizon=prediction_horizon,
                               max_depth=max_depth,
                               target_profit=target_profit,
-                              rets_length=slow,
+                              rets_length=slow, signal_mean_length=10,
                               make_orders=make_orders, verbose=verbose, backtest=backtest)
     agent.run()
 
@@ -70,7 +70,7 @@ def agent_test_combination(setup_agent, backtest):
 
 def test_agent_1(backtest=test_file):
     agent_test_combination(setup_agent_1, backtest=test_file)
-    
+
 def test_agent_2(backtest=test_file):
     agent_test_combination(setup_agent_2, backtest=test_file)
 
